@@ -97,7 +97,9 @@ def test_bad_kind_and_steps() -> None:
     with pytest.raises(ValueError):
         binomial_price(**BASE, kind="call", n_steps=0)
     with pytest.raises(ValueError):
-        binomial_price(**BASE, kind="call", n_steps=10**7)
+        binomial_price(
+            **BASE, kind="call", n_steps=20_001
+        )  # one past the documented limit: a raised limit computes it (a second or two) and fails, instead of hanging on a huge tree
 
 
 # --- check_price: known good / known bad ----------------------------------------------------
