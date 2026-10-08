@@ -140,6 +140,11 @@ def test_due_reviews_come_before_new_questions(db_conn) -> None:
     assert any("det" in m.value for m in at.markdown)  # the linalg-005 prompt
 
 
+@pytest.mark.skip(
+    reason="a text-answer question can no longer be trusted, so the practice page cannot reach "
+    "its self-graded text card; this test returns with the unverified-practice status "
+    "(docs/plans/unverified-practice-status.md)"
+)
 def test_text_answers_are_labelled_unverified_and_self_graded(db_conn) -> None:
     add_question(
         db_conn, "txt-001", answer_type="text", answer="Because of df.", difficulty=1,

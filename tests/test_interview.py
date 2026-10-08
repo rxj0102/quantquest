@@ -72,7 +72,10 @@ def test_selection_only_uses_trusted_curated_auto_gradable_questions_from_open_n
 ) -> None:
     add_question(conn, "cod-001", answer_type="code", answer="def f(): pass")
     add_question(conn, "gen-001", source="generated")
-    add_question(conn, "txt-001", answer_type="text", answer="words", fmt="derivation")
+    # a text question can never be trusted (core.schema), so the strongest case is a fresh one
+    add_question(
+        conn, "txt-001", answer_type="text", answer="words", fmt="derivation", status="fresh"
+    )
     for status in ("fresh", "flagged", "retired"):
         add_question(conn, f"zz{status[0]}-001", status=status)
     chosen = select_questions(conn, tree, USER, 50, seed=1)

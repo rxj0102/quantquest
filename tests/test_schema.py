@@ -75,6 +75,44 @@ def test_trusted_numeric_requires_passing_verification() -> None:
     assert ok.status is Status.TRUSTED
 
 
-def test_trusted_text_does_not_need_code_verification() -> None:
-    q = Question.model_validate(make_question(status="trusted", answer_type="text", format="case"))
-    assert q.status is Status.TRUSTED
+def test_a_text_answer_can_never_be_trusted() -> None:
+    """Text answers have no code check, so nothing may mark them trusted (CLAUDE.md rules 2 and 3)."""
+    for verification in (
+        {"method": "none", "result": "unverified"},
+        {"method": "llm", "result": "pass"},  # even a "pass" must not make it trusted
+    ):
+        with pytest.raises(ValidationError, match="text"):
+            Question.model_validate(
+                make_question(
+                    status="trusted", answer_type="text", format="case", verification=verification
+                )
+            )
+
+
+@pytest.mark.parametrize("status", ["fresh", "flagged", "retired"])
+def test_a_text_answer_may_have_every_other_status(status: str) -> None:
+    q = Question.model_validate(make_question(status=status, answer_type="text", format="case"))
+    assert q.status.value == status
+
+
+def test_the_database_refuses_to_mark_a_text_question_trusted(tmp_path) -> None:
+    from core import db
+    from core.schema import Verification
+
+    conn = db.connect(str(tmp_path / "t.db"))
+    text_q = Question.model_validate(make_question(answer_type="text", format="case"))
+    db.upsert_questions(conn, [text_q])
+    with pytest.raises(ValidationError, match="text"):
+        db.set_verification(
+            conn, text_q.id, Verification(method="llm", result="pass"), Status.TRUSTED
+        )
+    assert db.get_question(conn, text_q.id).status is Status.FRESH
+    conn.close()
+
+
+def test_the_existing_text_question_stat_005_is_unaffected() -> None:
+    from core.loader import load_questions
+
+    stat_005 = next(q for q in load_questions() if q.id == "stat-005")
+    assert stat_005.answer_type.value == "text"
+    assert stat_005.status is Status.FRESH

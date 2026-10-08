@@ -110,9 +110,16 @@ class Question(BaseModel):
 
     @model_validator(mode="after")
     def _trusted_needs_verification(self) -> Question:
-        """CLAUDE.md rules 2 and 3: checkable answers need a passing code check to be trusted."""
-        checkable = self.answer_type in (AnswerType.NUMERIC, AnswerType.SYMBOLIC, AnswerType.CODE)
-        if self.status is Status.TRUSTED and checkable and self.verification.result != "pass":
+        """CLAUDE.md rules 2 and 3: only code-verified answers can be trusted.
+
+        Text answers have no code verifier, so they can never be trusted, whatever their
+        verification record says. Numeric, symbolic and code answers need a passing check.
+        """
+        if self.status is not Status.TRUSTED:
+            return self
+        if self.answer_type is AnswerType.TEXT:
+            raise ValueError("a text-answer question can never be trusted (it cannot be verified)")
+        if self.verification.result != "pass":
             raise ValueError(
                 "a trusted numeric/symbolic/code question needs verification.result == 'pass'"
             )
