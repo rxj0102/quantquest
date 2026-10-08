@@ -14,6 +14,7 @@ import sympy as sp
 from core.loader import load_questions
 from core.schema import AnswerType
 from scripts.answer_checks import linear_algebra, probability, statistics
+from verify.parsing import safe_parse
 
 EXACT = {**probability.EXACT, **statistics.EXACT, **linear_algebra.EXACT}
 MONTE_CARLO = probability.MONTE_CARLO
@@ -22,7 +23,7 @@ TOL = sp.Rational(1, 10**9)
 
 def parse(answer: str) -> sp.Expr:
     """Parse an answer string into a SymPy expression."""
-    return sp.sympify(answer, rational=True)
+    return safe_parse(answer)
 
 
 def exact_agrees(answer: str, answer_type: AnswerType, computed: object) -> bool:
@@ -31,7 +32,7 @@ def exact_agrees(answer: str, answer_type: AnswerType, computed: object) -> bool
     got = (
         sp.nsimplify(computed, rational=True)
         if isinstance(computed, float)
-        else sp.sympify(computed)
+        else sp.sympify(computed)  # trusted: output of our own check functions
     )
     # Compare symbols by name only (checks may declare assumptions such as positive=True).
     got = got.subs({sym: sp.Symbol(sym.name) for sym in got.free_symbols})

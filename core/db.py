@@ -9,7 +9,11 @@ from contextlib import closing
 from datetime import datetime
 from pathlib import Path
 
-from core.schema import Question
+from core.schema import Question, Status, Verification
+
+# Never shown to users: flagged (failed verification or reported) and retired questions.
+HIDDEN_STATUSES = (Status.FLAGGED.value, Status.RETIRED.value)
+_HIDDEN_SQL = "(" + ", ".join(f"'{s}'" for s in HIDDEN_STATUSES) + ")"
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS questions (
@@ -102,9 +106,18 @@ def upsert_questions(conn: sqlite3.Connection, questions: Iterable[Question]) ->
         conn.executemany(UPSERT_SQL, [_to_row(q) for q in questions])
 
 
-def get_question(conn: sqlite3.Connection, question_id: str) -> Question | None:
-    """Fetch one question by id, or None."""
-    with closing(conn.execute("SELECT * FROM questions WHERE id = ?", (question_id,))) as cur:
+def get_question(
+    conn: sqlite3.Connection, question_id: str, *, include_hidden: bool = False
+) -> Question | None:
+    """Fetch one question by id, or None.
+
+    Flagged and retired questions are hidden (returned as None) unless ``include_hidden`` is
+    set, which only admin and verification code should do.
+    """
+    sql = "SELECT * FROM questions WHERE id = ?"
+    if not include_hidden:
+        sql += f" AND status NOT IN {_HIDDEN_SQL}"
+    with closing(conn.execute(sql, (question_id,))) as cur:
         row = cur.fetchone()
     return _from_row(row) if row else None
 
@@ -114,9 +127,18 @@ def list_questions(
     *,
     source_kind: str | None = None,
     status: str | None = None,
+    include_hidden: bool = False,
 ) -> list[Question]:
-    """List questions, optionally restricted to one pool (curated/generated/paper) and/or status."""
+    """List questions, optionally restricted to one pool (curated/generated/paper) and/or status.
+
+    Flagged and retired questions are excluded unless ``include_hidden`` is set; asking for a
+    hidden ``status`` without it is an error rather than a silently empty result.
+    """
+    if status in HIDDEN_STATUSES and not include_hidden:
+        raise ValueError(f"status {status!r} is hidden; pass include_hidden=True (admin use only)")
     clauses, params = [], []
+    if not include_hidden:
+        clauses.append(f"status NOT IN {_HIDDEN_SQL}")
     if source_kind is not None:
         clauses.append("source_kind = ?")
         params.append(source_kind)
@@ -143,4 +165,29 @@ def record_attempt(conn: sqlite3.Connection, question_id: str, *, correct: bool)
         conn.execute(
             "UPDATE questions SET solve_stats = ? WHERE id = ?",
             (stats.model_dump_json(), question_id),
+        )
+
+
+def set_verification(
+    conn: sqlite3.Connection,
+    question_id: str,
+    verification: Verification,
+    status: Status,
+) -> None:
+    """Store a verification record and move the question to ``status``.
+
+    The pair is validated through the ``Question`` model first, so a numeric/symbolic/code
+    question cannot become ``trusted`` without a passing record (CLAUDE.md rules 2 and 3).
+    solve_stats and created_at are untouched. Works on hidden questions too.
+    """
+    q = get_question(conn, question_id, include_hidden=True)
+    if q is None:
+        raise KeyError(question_id)
+    checked = Question.model_validate(
+        {**q.model_dump(), "verification": verification.model_dump(), "status": status}
+    )
+    with conn:
+        conn.execute(
+            "UPDATE questions SET status = ?, verification = ? WHERE id = ?",
+            (checked.status.value, checked.verification.model_dump_json(), question_id),
         )

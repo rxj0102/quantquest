@@ -146,3 +146,53 @@ def test_reload_keeps_review_state_unless_content_changes(conn: sqlite3.Connecti
 def test_record_attempt_unknown_id(conn: sqlite3.Connection) -> None:
     with pytest.raises(KeyError):
         db.record_attempt(conn, "prob-404", correct=True)
+
+
+# --- M2: hidden statuses and set_verification ---------------------------------------------------
+
+
+def test_flagged_and_retired_are_hidden_by_default(
+    conn: sqlite3.Connection, curated: list[Question]
+) -> None:
+    db.upsert_questions(conn, curated)
+    for qid, status in [("prob-001", "flagged"), ("prob-002", "retired")]:
+        conn.execute("UPDATE questions SET status = ? WHERE id = ?", (status, qid))
+    ids = {q.id for q in db.list_questions(conn)}
+    assert "prob-001" not in ids and "prob-002" not in ids and len(ids) == 18
+    assert db.get_question(conn, "prob-001") is None
+    assert db.get_question(conn, "prob-002", include_hidden=True) is not None
+    all_ids = {q.id for q in db.list_questions(conn, include_hidden=True)}
+    assert {"prob-001", "prob-002"} <= all_ids
+    with pytest.raises(ValueError):
+        db.list_questions(conn, status="retired")
+    with pytest.raises(KeyError):
+        db.record_attempt(conn, "prob-001", correct=True)
+
+
+def test_set_verification_promotes_and_validates(conn: sqlite3.Connection) -> None:
+    from pydantic import ValidationError
+
+    from core.schema import Verification
+
+    db.upsert_questions(conn, [Question.model_validate(make_question())])
+    with pytest.raises(ValidationError):  # trusted needs a passing record (CLAUDE.md rule 3)
+        db.set_verification(
+            conn, "prob-999", Verification(method="x", result="fail"), Status.TRUSTED
+        )
+    assert db.get_question(conn, "prob-999").status is Status.FRESH
+    ok = Verification(method="sympy_numeric", result="pass", details="rel_tol=1e-9")
+    db.set_verification(conn, "prob-999", ok, Status.TRUSTED)
+    got = db.get_question(conn, "prob-999")
+    assert got.status is Status.TRUSTED and got.verification == ok
+    with pytest.raises(KeyError):
+        db.set_verification(conn, "prob-404", ok, Status.TRUSTED)
+
+
+def test_set_verification_keeps_solve_stats(conn: sqlite3.Connection) -> None:
+    from core.schema import Verification
+
+    db.upsert_questions(conn, [Question.model_validate(make_question())])
+    db.record_attempt(conn, "prob-999", correct=True)
+    ok = Verification(method="m", result="pass")
+    db.set_verification(conn, "prob-999", ok, Status.TRUSTED)
+    assert db.get_question(conn, "prob-999").solve_stats.attempts == 1
