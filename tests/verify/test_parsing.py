@@ -186,3 +186,90 @@ def test_tiny_numeric_base_only_ever_raises_parse_rejected(text: str) -> None:
 def test_tiny_numeric_base_to_a_large_power_is_rejected() -> None:
     with pytest.raises(ParseRejected):
         safe_parse("(1/10**1000)**3")
+
+
+# --- gap-killing tests found by scripts/mutation/parsing.sh (see scripts/mutation/SURVIVORS.md)
+
+
+def test_length_limits_are_exact_for_answers_and_references() -> None:
+    from verify.parsing import MAX_REFERENCE_LEN
+
+    # Padding with spaces keeps the expression itself trivial, so only the length check can fire.
+    assert safe_parse("1" + " " * (MAX_LEN - 1)) == 1
+    with pytest.raises(ParseRejected, match="length"):
+        safe_parse("1" + " " * MAX_LEN)
+    assert safe_parse("1" + " " * (MAX_REFERENCE_LEN - 1), reference=True) == 1
+    with pytest.raises(ParseRejected, match="length"):
+        safe_parse("1" + " " * MAX_REFERENCE_LEN, reference=True)
+
+
+def test_literal_limit_is_exact() -> None:
+    assert safe_parse(str(10**18 - 1)) == 10**18 - 1
+    for text in (str(10**18), str(10**20)):
+        with pytest.raises(ParseRejected, match="out of range"):
+            safe_parse(text)
+
+
+@pytest.mark.parametrize("text", ["99999**1000", "(10**4)**1000", "(1/10**4)**1000"])
+def test_numeric_power_that_would_be_huge_is_rejected_before_it_is_computed(text: str) -> None:
+    with pytest.raises(ParseRejected, match="too large"):
+        safe_parse(text)
+
+
+def test_named_regressions_from_the_survivor_list() -> None:
+    """Inputs named in the first mutation run. 2**(1/0) is not a contract violation on the
+    current code (it parses to nan); the point is that it never raises anything but ParseRejected.
+    The other two are rejected on the exponent limit, which the mutants skipped."""
+    try:
+        safe_parse("2**(1/0)")
+    except ParseRejected:
+        pass
+    with pytest.raises(ParseRejected, match="exponent too large"):
+        safe_parse("2**(5 - -1001)")
+    with pytest.raises(ParseRejected, match="too large"):
+        safe_parse("99999**1000")
+
+
+@pytest.mark.parametrize("name", ["_x", "x_", "__x", "a__b", "x" * 25, "x" * 30])
+def test_bad_names_are_rejected(name: str) -> None:
+    if name == "x_":  # a single trailing underscore is an ordinary name
+        assert safe_parse(name) == sp.Symbol(name)
+        return
+    with pytest.raises(ParseRejected, match="bad name"):
+        safe_parse(name)
+
+
+def test_name_length_limit_is_exact() -> None:
+    assert safe_parse("x" * 24) == sp.Symbol("x" * 24)
+
+
+@pytest.mark.parametrize("text", ["Integer(5)", "Float(1.5)", "Symbol('x')"])
+def test_parser_internal_constructors_are_not_callable_by_users(text: str) -> None:
+    with pytest.raises(ParseRejected, match="not allowed"):
+        safe_parse(text)
+
+
+@pytest.mark.parametrize("text", ["(1, 2)", "[1, 2]", "(1,)", "[]"])
+def test_sequences_are_rejected_in_answers_but_allowed_in_references(text: str) -> None:
+    with pytest.raises(ParseRejected, match="disallowed syntax"):
+        safe_parse(text)
+    safe_parse(text, reference=True)
+
+
+def test_reference_index_must_be_a_constant_integer() -> None:
+    assert safe_parse("[5, 7][1]", reference=True) == 7
+    for text in ("[5, 7][1+0]", "[5, 7][0.0]", "[5, 7][x]"):
+        with pytest.raises(ParseRejected, match="constant integer"):
+            safe_parse(text, reference=True)
+
+
+def test_reference_names_are_not_visible_to_answers() -> None:
+    answer = safe_parse("oo + 1")
+    assert answer != sp.oo
+    assert sp.Symbol("oo") in answer.free_symbols
+    assert safe_parse("oo + 1", reference=True) == sp.oo
+
+
+def test_unknown_symbol_assumption_is_rejected() -> None:
+    with pytest.raises(ParseRejected, match="unknown assumption"):
+        safe_parse("x + 1", symbols={"x": "weird"})
