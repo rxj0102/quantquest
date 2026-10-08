@@ -144,3 +144,20 @@ def test_non_finite_float_literal_in_a_power_is_a_clean_rejection(text: str) -> 
     escape from the exact-value pre-check as an OverflowError."""
     with pytest.raises(ParseRejected):
         safe_parse(text)
+
+
+@pytest.mark.parametrize(
+    "text",
+    ["(10**1000)**2", "(10**500)**2", "(10**309)**1", "((10**1000)**1)**1", "(10**1000)**3"],
+)
+def test_huge_numeric_base_only_ever_raises_parse_rejected(text: str) -> None:
+    """math.log10 of a Fraction past the float range raised OverflowError out of safe_parse."""
+    try:
+        safe_parse(text)
+    except ParseRejected:
+        pass
+
+
+def test_huge_numeric_base_to_a_large_power_is_rejected() -> None:
+    with pytest.raises(ParseRejected):
+        safe_parse("(10**1000)**3")
