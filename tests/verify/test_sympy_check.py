@@ -20,16 +20,20 @@ def test_numeric_known_good_against_script_fixtures(curated: list[Question]) -> 
     assert ran >= 14
 
 
+# The symbolic curated questions, by id. Deleting or retyping one must fail this test; when a
+# symbolic question is added or removed on purpose, update the list in the same commit.
+EXPECTED_SYMBOLIC_IDS = ["linalg-005", "linalg-009", "linalg-012", "stat-003"]
+
+
 def test_symbolic_known_good_against_script_fixtures(curated: list[Question]) -> None:
-    ran = 0
+    symbolic = sorted(q.id for q in curated if q.answer_type is AnswerType.SYMBOLIC)
+    assert symbolic == EXPECTED_SYMBOLIC_IDS
     for q in curated:
         if q.answer_type is not AnswerType.SYMBOLIC:
             continue
         reference = ExactSpec(expr=str(SCRIPT_EXACT[q.id]()), symbols={})
         res = check_symbolic(q.answer, reference)
         assert res.passed, (q.id, res.details)
-        ran += 1
-    assert ran >= 4  # linalg-005, stat-003, linalg-009, linalg-012: none skipped
 
 
 def test_symbolic_accepts_equivalent_forms() -> None:
