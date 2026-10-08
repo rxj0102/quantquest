@@ -1,2 +1,6 @@
 pydantic>=2.5,<3
 pyyaml>=6.0,<7
+# verify/ is app code (CLAUDE.md stack): exact checks, Monte Carlo, pricing references.
+sympy>=1.12
+numpy>=1.26
+scipy>=1.11

@@ -11,5 +11,12 @@ jobs:
           cache: pip
           cache-dependency-path: requirements*.txt
       - run: pip install -r requirements-dev.txt
+      # code_runner needs a network namespace. Ubuntu 24.04 runners restrict unprivileged user
+      # namespaces via AppArmor, so lift that with sudo. The key is absent on older images.
+      - name: Allow unprivileged user namespaces
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || echo "sysctl key not present"
+      # Exits non-zero, failing the build loudly, if the sandbox cannot isolate the network.
+      - name: Verify sandbox network isolation
+        run: python -m verify.code_runner --selfcheck
       - run: ruff check .
       - run: pytest -q
