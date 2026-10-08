@@ -1,0 +1,89 @@
+# Curated linear algebra questions. All wording is original.
+- id: linalg-001
+  topic: linear_algebra
+  node_id: la.determinants
+  difficulty: 1
+  format: mental_math
+  prompt_md: |
+    Compute $\det\begin{pmatrix}2&1\\5&3\end{pmatrix}$.
+  answer: "1"
+  answer_type: numeric
+  solution_md: |
+    $2\cdot 3 - 1\cdot 5 = 1$.
+  source: curated
+  status: fresh
+
+- id: linalg-002
+  topic: linear_algebra
+  node_id: la.eigen
+  difficulty: 2
+  format: derivation
+  prompt_md: |
+    What is the largest eigenvalue of $A=\begin{pmatrix}4&1\\2&3\end{pmatrix}$?
+  answer: "5"
+  answer_type: numeric
+  solution_md: |
+    The characteristic polynomial is $\lambda^2 - 7\lambda + 10 = (\lambda-5)(\lambda-2)$,
+    so the eigenvalues are $5$ and $2$.
+  source: curated
+  status: fresh
+
+- id: linalg-003
+  topic: linear_algebra
+  node_id: la.rank
+  difficulty: 2
+  format: derivation
+  prompt_md: |
+    Find the rank of $\begin{pmatrix}1&2&3\\2&4&6\\1&0&1\end{pmatrix}$.
+  answer: "2"
+  answer_type: numeric
+  solution_md: |
+    Row $2$ is twice row $1$, so at most two rows are independent. Rows $1$ and $3$ are not
+    proportional, so the rank is $2$.
+  source: curated
+  status: fresh
+
+- id: linalg-004
+  topic: linear_algebra
+  node_id: la.eigen
+  difficulty: 3
+  format: mental_math
+  prompt_md: |
+    Let $A=\begin{pmatrix}1&2\\0&3\end{pmatrix}$. What is $\operatorname{tr}(A^2)$?
+  answer: "10"
+  answer_type: numeric
+  solution_md: |
+    $A$ is triangular with eigenvalues $1$ and $3$, so $A^2$ has eigenvalues $1$ and $9$,
+    and the trace is $10$.
+  source: curated
+  status: fresh
+
+- id: linalg-005
+  topic: linear_algebra
+  node_id: la.determinants
+  difficulty: 3
+  format: derivation
+  prompt_md: |
+    For $A=\begin{pmatrix}a&b\\c&d\end{pmatrix}$, express $\det(A^2)$ in terms of $a,b,c,d$.
+  answer: "(a*d - b*c)**2"
+  answer_type: symbolic
+  solution_md: |
+    $\det(A^2)=\det(A)^2=(ad-bc)^2$ by multiplicativity of the determinant.
+  source: curated
+  status: fresh
+
+- id: linalg-006
+  topic: linear_algebra
+  node_id: la.projections
+  difficulty: 4
+  format: derivation
+  prompt_md: |
+    Project the vector $v=(2,2)$ orthogonally onto the line spanned by $u=(1,2)$.
+    What is the squared length of the projection?
+  answer: "36/5"
+  answer_type: numeric
+  solution_md: |
+    $\operatorname{proj}_u v = \frac{v\cdot u}{u\cdot u}u = \frac{6}{5}(1,2)$, so its squared
+    length is $\frac{36}{25}\cdot 5 = \frac{36}{5}$.
+  source: curated
+  status: fresh

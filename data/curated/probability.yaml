@@ -1,0 +1,125 @@
+# Curated probability questions. All wording is original.
+# status stays "fresh" until M2 verifiers exist (CLAUDE.md rule 3).
+- id: prob-001
+  topic: probability
+  node_id: prob.counting
+  difficulty: 1
+  format: probability
+  prompt_md: |
+    Two fair six-sided dice are rolled once. What is the probability that the two faces sum to $9$?
+  answer: "1/9"
+  answer_type: numeric
+  solution_md: |
+    Of the $36$ equally likely ordered outcomes, the ones summing to $9$ are $(3,6),(4,5),(5,4),(6,3)$.
+    That is $4/36 = 1/9$.
+  source: curated
+  status: fresh
+
+- id: prob-002
+  topic: probability
+  node_id: prob.conditional
+  difficulty: 1
+  format: probability
+  prompt_md: |
+    A drawer holds $5$ red socks and $3$ blue socks. You pull out two socks at random without
+    replacement. What is the probability that both are red?
+  answer: "5/14"
+  answer_type: numeric
+  solution_md: |
+    $P = \frac{5}{8}\cdot\frac{4}{7} = \frac{20}{56} = \frac{5}{14}$.
+  source: curated
+  status: fresh
+
+- id: prob-003
+  topic: probability
+  node_id: prob.expectation
+  difficulty: 1
+  format: mental_math
+  prompt_md: |
+    You roll a fair die repeatedly until a six first appears. What is the expected number of rolls,
+    counting the roll that shows the six?
+  answer: "6"
+  answer_type: numeric
+  solution_md: |
+    The number of rolls is geometric with success probability $p = 1/6$, so the mean is $1/p = 6$.
+  source: curated
+  status: fresh
+
+- id: prob-004
+  topic: probability
+  node_id: prob.counting
+  difficulty: 2
+  format: probability
+  prompt_md: |
+    A fair coin is flipped $4$ times. What is the probability of seeing at least $2$ heads?
+  answer: "11/16"
+  answer_type: numeric
+  solution_md: |
+    Use the complement. $P(0\text{ heads}) = 1/16$ and $P(1\text{ head}) = 4/16$, so
+    $P(\ge 2) = 1 - 5/16 = 11/16$.
+  source: curated
+  status: fresh
+
+- id: prob-005
+  topic: probability
+  node_id: prob.counting
+  difficulty: 3
+  format: probability
+  prompt_md: |
+    Four letters are placed at random into four addressed envelopes, one letter per envelope.
+    What is the probability that no letter lands in its own envelope?
+  answer: "3/8"
+  answer_type: numeric
+  solution_md: |
+    Count derangements of $4$ items by inclusion-exclusion:
+    $4!\,(1 - 1 + \tfrac12 - \tfrac16 + \tfrac1{24}) = 9$. The probability is $9/24 = 3/8$.
+  source: curated
+  status: fresh
+
+- id: prob-006
+  topic: probability
+  node_id: prob.conditional
+  difficulty: 3
+  format: probability
+  prompt_md: |
+    A screening test for a condition with $1\%$ prevalence flags $95\%$ of people who have it
+    and falsely flags $10\%$ of people who do not. Given that a randomly chosen person is flagged,
+    what is the probability they actually have the condition?
+  answer: "19/217"
+  answer_type: numeric
+  solution_md: |
+    By Bayes' rule,
+    $P = \frac{0.95\cdot 0.01}{0.95\cdot 0.01 + 0.10\cdot 0.99} = \frac{0.0095}{0.1085} = \frac{19}{217}\approx 0.0876$.
+  source: curated
+  status: fresh
+
+- id: prob-007
+  topic: probability
+  node_id: prob.expectation
+  difficulty: 3
+  format: derivation
+  prompt_md: |
+    Let $U$ and $V$ be independent and uniformly distributed on $[0,1]$. Find $\mathbb{E}[\max(U,V)]$.
+  answer: "2/3"
+  answer_type: numeric
+  solution_md: |
+    $P(\max \le t) = t^2$, so the density is $2t$ and
+    $\mathbb{E}[\max] = \int_0^1 t\cdot 2t\,dt = 2/3$.
+  source: curated
+  status: fresh
+
+- id: prob-008
+  topic: probability
+  node_id: prob.random_walks
+  difficulty: 4
+  format: probability
+  prompt_md: |
+    A fair random walk moves $\pm 1$ each step with equal probability. It starts at $3$ and stops
+    the first time it reaches $0$ or $10$. What is the probability that it stops at $10$?
+  answer: "3/10"
+  answer_type: numeric
+  solution_md: |
+    The walk is a martingale and the stopping time is bounded in expectation, so
+    $3 = 10\cdot p + 0\cdot(1-p)$, giving $p = 3/10$.
+  source: curated
+  status: fresh
