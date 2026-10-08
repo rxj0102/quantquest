@@ -25,8 +25,9 @@
   difficulty: 3
   format: derivation
   prompt_md: |
-    Let $u=(2,1,3)^T$ and $v=(1,2,1)^T$, and let $M=I+uv^T$, where $I$ is the $3\times3$ identity
-    matrix. The eigenvalue $1$ of $M$ appears twice. What is the third eigenvalue? Give your answer
+    Let $u=(2,1,3)^T$ and $v=(1,2,1)^T$ be column vectors, and let $M=I+uv^T$, where $uv^T$ is
+    their outer product (a $3\times3$ matrix) and $I$ is the $3\times3$ identity matrix. The
+    eigenvalue $1$ of $M$ appears twice. What is the third eigenvalue? Give your answer
     as an integer.
   answer: "8"
   answer_type: numeric
@@ -70,7 +71,8 @@
   format: derivation
   prompt_md: |
     Let $A=\begin{pmatrix}1&2\\3&0\end{pmatrix}$, let $I$ be the $2\times2$ identity matrix, and let
-    $B=A^2-2A+I$. What is the largest eigenvalue of $B$? Give your answer as an integer.
+    $B=A^2-2A+I$, where $A^2$ means the matrix product $A\cdot A$. What is the largest eigenvalue
+    of $B$? Give your answer as an integer.
   answer: "9"
   answer_type: numeric
   solution_md: |
@@ -91,8 +93,8 @@
   difficulty: 2
   format: derivation
   prompt_md: |
-    Take $A=\begin{pmatrix}2&0&1\\1&1&1\\2&0&3\end{pmatrix}$. One of its eigenvectors is
-    $v=(1,1,2)^T$. Find the eigenvalue that belongs to $v$. Give your answer as an integer.
+    Take $A=\begin{pmatrix}2&0&1\\1&1&1\\2&0&3\end{pmatrix}$. One of its right eigenvectors,
+    meaning $Av=\lambda v$, is $v=(1,1,2)^T$. Find the eigenvalue $\lambda$ that belongs to $v$. Give your answer as an integer.
   answer: "4"
   answer_type: numeric
   solution_md: |
