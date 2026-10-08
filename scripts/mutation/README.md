@@ -12,6 +12,10 @@ From the repository root, with the project virtualenv in place (`.venv`, or set 
 scripts/mutation/dice_event.sh     # the dice_event simulator (28 mutants, about a minute)
 scripts/mutation/m4.sh             # the M4 logic: answers, XP and streaks, practice, interview,
                                    # visibility, reference hash, worker pool (28 mutants)
+scripts/mutation/parsing.sh        # verify/parsing.py, the expression parser (35 mutants)
+scripts/mutation/timeout.sh        # verify/timeout.py, the worker pool (28 mutants, can take 10+ minutes
+                                   # because mutants that hang are stopped by MUTATION_TIMEOUT)
+scripts/mutation/pricing.sh        # verify/pricing.py, Black-Scholes and the tree (34 mutants)
 scripts/mutation/mutate.sh FILE 'SED-EXPRESSION' PYTEST-ARGS...    # one mutant by hand
 ```
 
@@ -70,6 +74,12 @@ single-line `sed` expression and will be reported as `NO-OP`.
 - The `abs_tol=1e-12` mutant in `verify/answers.py` (exact-integer answers must not get an absolute
   tolerance) is caught, by `test_exact_means_exact_even_at_floating_point_dust`.
 
-Not covered by these scripts: the M2 verifier library and the M3 core. Those were mutation tested
-during development, but the mutant lists and results were not kept, so they cannot be re-run from
-here yet.
+`parsing.sh`, `timeout.sh`, `pricing.sh` (first run, 2026-10-08): 97 mutants, 51 caught, 46
+survived, 0 invalid (parsing 12 of 35 caught, timeout 12 of 28, pricing 27 of 34). Of the 46
+survivors, 33 are test gaps and 13 are equivalent or very likely equivalent. Every survivor, with
+the input that separates it from the original, is in [SURVIVORS.md](SURVIVORS.md). No tests have
+been written for them yet.
+
+Not covered by these scripts: the M2 `sympy_check`, `monte_carlo` and `code_runner` modules and
+the M3 core. Those were mutation tested during development, but the mutant lists and results were
+not kept, so they cannot be re-run from here yet.
