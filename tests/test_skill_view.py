@@ -17,14 +17,14 @@ def test_trusted_counts_statuses_and_gaps(trusted_conn) -> None:
     v = view(trusted_conn)
     assert {k: (n.trusted_count, n.min_trusted) for k, n in v.items()} == {
         "prob.counting": (3, 3), "prob.conditional": (7, 3), "prob.expectation": (3, 3),
-        "stat.moments": (3, 3), "stat.estimation": (2, 3), "la.determinants": (3, 3),
-        "la.eigen": (8, 3), "la.projections": (1, 3),
+        "stat.moments": (3, 3), "stat.estimation": (8, 3), "la.determinants": (3, 3),
+        "la.eigen": (8, 3), "la.projections": (7, 3),
     }  # fmt: skip
     assert {k for k, n in v.items() if n.status == "unlocked"} == {
         "prob.counting",
         "la.determinants",
     }
-    assert v["la.projections"].need_more == 2 and v["prob.counting"].need_more == 0
+    assert v["la.projections"].need_more == 0 and v["prob.counting"].need_more == 0
     assert v["stat.estimation"].blocked_by == ["stat.moments", "prob.conditional"] or set(
         v["stat.estimation"].blocked_by
     ) == {"stat.moments", "prob.conditional"}

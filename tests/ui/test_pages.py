@@ -42,10 +42,10 @@ def test_skill_tree_shows_every_node_with_status_and_trusted_counts() -> None:
     assert "🔓 Unlocked" in text and "🔒 Locked" in text
     assert (
         "3/3 trusted questions" in text
-        and "2/3 trusted questions" in text
-        and "1/3 trusted questions" in text
+        and "7/3 trusted questions" in text
+        and "8/3 trusted questions" in text
     )
-    assert "Needs 2 more trusted question(s)" in text  # la.projections
+    assert "Needs" not in text  # every node has the minimum number of trusted questions
     assert "Locked until mastered: Counting and basic probability" in text
 
 

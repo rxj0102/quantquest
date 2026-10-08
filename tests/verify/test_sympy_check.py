@@ -22,7 +22,7 @@ def test_numeric_known_good_against_script_fixtures(curated: list[Question]) -> 
 
 # The symbolic curated questions, by id. Deleting or retyping one must fail this test; when a
 # symbolic question is added or removed on purpose, update the list in the same commit.
-EXPECTED_SYMBOLIC_IDS = ["linalg-005", "linalg-009", "linalg-012", "stat-003"]
+EXPECTED_SYMBOLIC_IDS = ["linalg-005", "linalg-009", "linalg-012", "stat-003", "stat-012"]
 
 
 def test_symbolic_known_good_against_script_fixtures(curated: list[Question]) -> None:

@@ -273,23 +273,16 @@ def test_curated_pool_with_no_history_unlocks_only_the_roots(trusted_conn) -> No
     assert not any(v == "mastered" for v in s.values())
 
 
-def test_curated_pool_content_gaps_are_visible_and_block_unlocks(trusted_conn) -> None:
+def test_every_node_of_the_curated_pool_has_enough_content_to_be_mastered(trusted_conn) -> None:
+    """With perfect stats every node reaches mastered: the pool has no content gaps now.
+
+    (Gaps blocking mastery and unlocks are covered by the synthetic tests in this file.)
+    """
     qs = with_perfect_stats(db.list_questions(trusted_conn))
     s = node_states(load_tree(), qs)
-    # nodes with >= 3 trusted questions can be mastered ...
-    for nid in (
-        "prob.counting", "prob.conditional", "prob.expectation", "stat.moments",
-        "la.determinants", "la.eigen",
-    ):  # fmt: skip
-        assert s[nid].status == "mastered", nid
-    # ... nodes with fewer cannot, however well the user does (they are content gaps)
-    for nid, n in {
-        "la.projections": 1,
-        "stat.estimation": 2,
-    }.items():
-        assert s[nid].mastery.trusted_count == n and s[nid].status != "mastered", nid
-    # both its prerequisites can now be mastered, so it is open, but it cannot itself be mastered
-    assert s["stat.estimation"].status == "unlocked"
+    assert {n: st.status for n, st in s.items()} == {n: "mastered" for n in s}
+    assert s["stat.estimation"].mastery.trusted_count == 8
+    assert s["la.projections"].mastery.trusted_count == 7
 
 
 def test_content_report_lists_counts_and_gaps(trusted_conn) -> None:
@@ -297,17 +290,14 @@ def test_content_report_lists_counts_and_gaps(trusted_conn) -> None:
     counts = {r.node_id: r.trusted_count for r in rep.rows}
     assert counts == {
         "prob.counting": 3, "prob.conditional": 7, "prob.expectation": 3, "stat.moments": 3,
-        "stat.estimation": 2, "la.determinants": 3, "la.eigen": 8, "la.projections": 1,
+        "stat.estimation": 8, "la.determinants": 3, "la.eigen": 8, "la.projections": 7,
     }  # fmt: skip
-    assert set(rep.below_minimum) == {
-        "stat.estimation",
-        "la.projections",
-    }
-    assert rep.unreachable == []  # every prerequisite chain can now be mastered
+    assert rep.below_minimum == []  # every node has at least the minimum
+    assert rep.unreachable == []  # every prerequisite chain can be mastered
     text = rep.format()
     for nid in counts:
         assert nid in text
-    assert "2/3" in text and "1/3" in text and "need" in text.lower()
+    assert "8/3" in text and "7/3" in text and "minimum" in text.lower()
 
 
 def test_content_report_when_everything_has_enough_content() -> None:

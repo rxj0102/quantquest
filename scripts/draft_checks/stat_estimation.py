@@ -20,15 +20,23 @@ def stat_007() -> float:
 
 
 def stat_008() -> float:
-    """Maximise the log-likelihood numerically from the raw data (no calculus by hand)."""
+    """Solve for the maximum from the raw data: the root of the log-likelihood's slope.
+
+    The slope is a central difference of the log-likelihood, so no formula is derived by hand.
+    Maximising the likelihood directly is only accurate to about 1e-8 because it is flat at the
+    top, which is not enough for the strict 1e-9 comparison used against the references.
+    """
     data = np.array([0.5, 1.5, 2.0, 4.0])
-    res = optimize.minimize_scalar(
-        lambda lam: -(len(data) * np.log(lam) - lam * data.sum()),
-        bounds=(1e-6, 10.0),
-        method="bounded",
-        options={"xatol": 1e-13},
+    h = 1e-6
+
+    def loglik(lam: float) -> float:
+        return len(data) * np.log(lam) - lam * data.sum()
+
+    return float(
+        optimize.brentq(
+            lambda lam: (loglik(lam + h) - loglik(lam - h)) / (2 * h), 0.01, 10.0, xtol=1e-14
+        )
     )
-    return float(res.x)
 
 
 def stat_009() -> sp.Expr:
