@@ -108,3 +108,134 @@
   reference:
     exact:
       expr: (2*2 + 2*2) - (2*2 - 2*1)**2/(1*1 + 2*2)
+
+- id: linalg-007
+  topic: linear_algebra
+  node_id: la.eigen
+  difficulty: 1
+  format: mental_math
+  prompt_md: |
+    Look at $A=\begin{pmatrix}6&1&4\\0&2&9\\0&0&5\end{pmatrix}$. What is its largest eigenvalue?
+    Give your answer as an integer.
+  answer: "6"
+  answer_type: numeric
+  solution_md: |
+    $A$ is upper triangular, so its eigenvalues are its diagonal entries $6$, $2$ and $5$.
+    The largest is $6$.
+  source: curated
+  status: fresh
+  reference:
+    exact:
+      expr: max_eigenvalue(Matrix([[6, 1, 4], [0, 2, 9], [0, 0, 5]]))
+
+- id: linalg-008
+  topic: linear_algebra
+  node_id: la.eigen
+  difficulty: 3
+  format: derivation
+  prompt_md: |
+    Let $u=(2,1,3)^T$ and $v=(1,2,1)^T$ be column vectors, and let $M=I+uv^T$, where $uv^T$ is
+    their outer product (a $3\times3$ matrix) and $I$ is the $3\times3$ identity matrix. The
+    eigenvalue $1$ of $M$ appears twice. What is the third eigenvalue? Give your answer
+    as an integer.
+  answer: "8"
+  answer_type: numeric
+  solution_md: |
+    The matrix $uv^T$ has rank one, so it has eigenvalue $0$ twice, and $(uv^T)u=u\,(v^Tu)$ shows
+    that its third eigenvalue is $v^Tu=2+2+3=7$. Adding $I$ shifts every eigenvalue by $1$, giving
+    $1,1,8$. The third eigenvalue is $8$.
+  source: curated
+  status: fresh
+  reference:
+    exact:
+      expr: >-
+        max_eigenvalue(Matrix([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+        + Matrix([[2], [1], [3]])*Matrix([[1, 2, 1]]))
+
+- id: linalg-009
+  topic: linear_algebra
+  node_id: la.eigen
+  difficulty: 2
+  format: derivation
+  prompt_md: |
+    Let $A=\begin{pmatrix}1&2\\3&4\end{pmatrix}$ and let $I$ be the $2\times2$ identity matrix.
+    Compute $p(t)=\det(A-tI)$, that is, $A$ minus $t$ times $I$ (not $tI-A$). Give your
+    answer as a single expression in $t$.
+  answer: "t**2 - 5*t - 2"
+  answer_type: symbolic
+  solution_md: |
+    $$
+    \det\begin{pmatrix}1-t&2\\3&4-t\end{pmatrix}=(1-t)(4-t)-6=t^2-5t-2.
+    $$
+  source: curated
+  status: fresh
+  reference:
+    exact:
+      expr: det(Matrix([[1, 2], [3, 4]]) - t*Matrix([[1, 0], [0, 1]]))
+
+- id: linalg-010
+  topic: linear_algebra
+  node_id: la.eigen
+  difficulty: 3
+  format: derivation
+  prompt_md: |
+    Let $A=\begin{pmatrix}1&2\\3&0\end{pmatrix}$, let $I$ be the $2\times2$ identity matrix, and let
+    $B=A^2-2A+I$, where $A^2$ means the matrix product $A\cdot A$. What is the largest eigenvalue
+    of $B$? Give your answer as an integer.
+  answer: "9"
+  answer_type: numeric
+  solution_md: |
+    The eigenvalues of $A$ solve $\lambda^2-\lambda-6=0$, so they are $3$ and $-2$. A polynomial in
+    $A$ has the same polynomial applied to each eigenvalue, and $B=(A-I)^2$, so the eigenvalues of
+    $B$ are $(3-1)^2=4$ and $(-2-1)^2=9$. The largest is $9$.
+  source: curated
+  status: fresh
+  reference:
+    exact:
+      expr: >-
+        max_eigenvalue(Matrix([[1, 2], [3, 0]])**2 - 2*Matrix([[1, 2], [3, 0]])
+        + Matrix([[1, 0], [0, 1]]))
+
+- id: linalg-011
+  topic: linear_algebra
+  node_id: la.eigen
+  difficulty: 2
+  format: derivation
+  prompt_md: |
+    Take $A=\begin{pmatrix}2&0&1\\1&1&1\\2&0&3\end{pmatrix}$. One of its right eigenvectors,
+    meaning $Av=\lambda v$, is $v=(1,1,2)^T$. Find the eigenvalue $\lambda$ that belongs to $v$. Give your answer as an integer.
+  answer: "4"
+  answer_type: numeric
+  solution_md: |
+    Multiply $A$ by $v$ one row at a time: the entries of $Av$ are $2+0+2=4$, $1+1+2=4$ and
+    $2+0+6=8$. So $Av=(4,4,8)^T=4v$, and the eigenvalue is $4$.
+  source: curated
+  status: fresh
+  reference:
+    exact:
+      expr: >-
+        trace(Matrix([[2, 0, 1], [1, 1, 1], [2, 0, 3]]) * Matrix([[1, 0, 0], [1, 0, 0], [2, 0, 0]]))
+
+- id: linalg-012
+  topic: linear_algebra
+  node_id: la.eigen
+  difficulty: 4
+  format: derivation
+  prompt_md: |
+    A two-state Markov chain with $0<a<1$ and $0<b<1$ has transition matrix
+    $P=\begin{pmatrix}1-a&a\\b&1-b\end{pmatrix}$. Because every row of $P$ sums to $1$, the
+    eigenvalue $1$ is already known. Find the other eigenvalue. Give your answer
+    as a single expression in $a$ and $b$.
+  answer: "1 - a - b"
+  answer_type: symbolic
+  solution_md: |
+    The eigenvalues multiply to the determinant. Here
+    $$
+    \det P=(1-a)(1-b)-ab=1-a-b.
+    $$
+    One eigenvalue is $1$, so the other is $1-a-b$.
+  source: curated
+  status: fresh
+  reference:
+    exact:
+      expr: det(Matrix([[1 - a, a], [b, 1 - b]]))

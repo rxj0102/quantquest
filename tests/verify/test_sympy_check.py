@@ -29,7 +29,7 @@ def test_symbolic_known_good_against_script_fixtures(curated: list[Question]) ->
         res = check_symbolic(q.answer, reference)
         assert res.passed, (q.id, res.details)
         ran += 1
-    assert ran == 2
+    assert ran >= 4  # linalg-005, stat-003, linalg-009, linalg-012: none skipped
 
 
 def test_symbolic_accepts_equivalent_forms() -> None:
