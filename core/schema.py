@@ -83,6 +83,9 @@ class Question(BaseModel):
     status: Status = Status.FRESH
     created_at: datetime = Field(default_factory=_utcnow)
     solve_stats: SolveStats = Field(default_factory=SolveStats)
+    # Relative tolerance for numeric answers typed in the UI. None = the app default (exact for
+    # integer answers). Not evidence: verification and promotion never read it.
+    answer_tolerance: float | None = Field(default=None, ge=0, le=1)
 
     @field_validator("id")
     @classmethod

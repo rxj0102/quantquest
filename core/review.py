@@ -9,6 +9,7 @@ reads the system clock.
 from __future__ import annotations
 
 import sqlite3
+from collections.abc import Callable
 from contextlib import closing
 from datetime import datetime
 
@@ -98,6 +99,7 @@ def record_review(
     rating: Rating,
     now: datetime,
     scheduler: Scheduler | None = None,
+    extra_writes: Callable[[sqlite3.Connection], None] | None = None,
 ) -> ReviewState:
     """Record one answer: schedule the next review and count the attempt, atomically.
 
@@ -106,6 +108,8 @@ def record_review(
     ``KeyError`` for an unknown question, ``ValueError`` if the question is not ``trusted``, the
     clock is naive or ``user_id`` is invalid, and ``RuntimeError`` if the connection already has
     an open transaction (the caller's work would be committed or rolled back with ours).
+    ``extra_writes`` runs inside the transaction (it must not commit), for writes that have to
+    succeed or fail together with the review, such as the XP event.
     """
     _check_user(user_id)
     now = to_utc(now)
@@ -128,6 +132,8 @@ def record_review(
         new_state = scheduler.review(state, rating, now)
         _upsert_state(conn, new_state)
         _bump_solve_stats(conn, question_id, correct=rating is not Rating.AGAIN)
+        if extra_writes is not None:
+            extra_writes(conn)  # same transaction: if it raises, everything above is rolled back
         conn.commit()
     except BaseException:
         conn.rollback()

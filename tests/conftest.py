@@ -43,3 +43,46 @@ def trusted_conn(curated: list[Question]):
             db.set_verification(conn, q.id, ok, Status.TRUSTED)
     yield conn
     conn.close()
+
+
+def add_question(
+    conn,
+    qid: str,
+    *,
+    node: str = "prob.counting",
+    status: str = "trusted",
+    answer: str = "5",
+    answer_type: str = "numeric",
+    prompt: str | None = None,
+    solution: str | None = None,
+    difficulty: int = 2,
+    source: str = "curated",
+    fmt: str = "mental_math",
+    answer_tolerance: float | None = None,
+) -> Question:
+    """Insert a synthetic question with the given status (trusted ones get a passing record)."""
+    from core import db
+    from core.schema import Status, Verification
+
+    data = make_question(
+        id=qid,
+        node_id=node,
+        answer=answer,
+        answer_type=answer_type,
+        format=fmt,
+        difficulty=difficulty,
+        source=source,
+        prompt_md=prompt or f"Synthetic prompt for {qid}.",
+        solution_md=solution or f"Synthetic solution for {qid}.",
+    )
+    if answer_tolerance is not None:
+        data["answer_tolerance"] = answer_tolerance
+    q = Question.model_validate(data)
+    db.upsert_questions(conn, [q])
+    ok = Verification(method="test_fixture", result="pass")
+    if status == "trusted":
+        db.set_verification(conn, qid, ok, Status.TRUSTED)
+    elif status != "fresh":
+        conn.execute("UPDATE questions SET status = ? WHERE id = ?", (status, qid))
+        conn.commit()
+    return q

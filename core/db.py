@@ -32,7 +32,8 @@ CREATE TABLE IF NOT EXISTS questions (
     status        TEXT NOT NULL CHECK (status IN ('fresh', 'trusted', 'flagged', 'retired')),
     created_at    TEXT NOT NULL,   -- ISO 8601, UTC
     solve_stats   TEXT NOT NULL,   -- JSON
-    reference_hash TEXT            -- fingerprint of the reference the status was earned against
+    reference_hash TEXT,           -- fingerprint of the reference the status was earned against
+    answer_tolerance REAL          -- optional UI tolerance override (relative)
 );
 CREATE INDEX IF NOT EXISTS idx_questions_pool ON questions (source_kind, status);
 CREATE INDEX IF NOT EXISTS idx_questions_node ON questions (node_id);
@@ -51,6 +52,42 @@ CREATE TABLE IF NOT EXISTS review_state (
     PRIMARY KEY (user_id, question_id)
 );
 CREATE INDEX IF NOT EXISTS idx_review_due ON review_state (user_id, due_at);
+
+-- Append-only XP log. Totals and streaks are derived from it; days are computed in the configured
+-- zone at read time, so changing the zone never rewrites history.
+CREATE TABLE IF NOT EXISTS xp_event (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id      TEXT NOT NULL,
+    question_id  TEXT NOT NULL REFERENCES questions (id),
+    kind         TEXT NOT NULL CHECK (kind IN ('review', 'interview')),
+    xp           INTEGER NOT NULL CHECK (xp >= 0),
+    at           TEXT NOT NULL      -- UTC
+);
+CREATE INDEX IF NOT EXISTS idx_xp_user_at ON xp_event (user_id, at);
+
+-- Timed interview runs. The deadline is stored, so a page refresh or a second tab cannot reset it.
+CREATE TABLE IF NOT EXISTS interview_run (
+    id               TEXT PRIMARY KEY,
+    user_id          TEXT NOT NULL,
+    started_at       TEXT NOT NULL,
+    deadline_at      TEXT NOT NULL,
+    duration_seconds INTEGER NOT NULL CHECK (duration_seconds > 0),
+    question_ids     TEXT NOT NULL,   -- JSON list: the fixed set, in order
+    status           TEXT NOT NULL CHECK (status IN ('active', 'finished', 'expired')),
+    finished_at      TEXT
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_one_active_run
+    ON interview_run (user_id) WHERE status = 'active';
+
+CREATE TABLE IF NOT EXISTS interview_answer (
+    run_id       TEXT NOT NULL REFERENCES interview_run (id),
+    question_id  TEXT NOT NULL REFERENCES questions (id),
+    typed        TEXT NOT NULL,
+    outcome      TEXT NOT NULL CHECK (outcome IN ('correct', 'incorrect')),
+    answered_at  TEXT NOT NULL,
+    xp           INTEGER NOT NULL CHECK (xp >= 0),
+    PRIMARY KEY (run_id, question_id)
+);
 """
 
 # On re-load, YAML owns question content and its reference. The database owns lifecycle data:
@@ -69,10 +106,10 @@ _CHANGED = """(questions.prompt_md != excluded.prompt_md
 UPSERT_SQL = f"""
 INSERT INTO questions (id, topic, node_id, difficulty, format, prompt_md, answer,
                        answer_type, solution_md, verification, source, source_kind, status,
-                       created_at, solve_stats, reference_hash)
+                       created_at, solve_stats, reference_hash, answer_tolerance)
 VALUES (:id, :topic, :node_id, :difficulty, :format, :prompt_md, :answer, :answer_type,
         :solution_md, :verification, :source, :source_kind, :status, :created_at, :solve_stats,
-        :reference_hash)
+        :reference_hash, :answer_tolerance)
 ON CONFLICT(id) DO UPDATE SET
     topic = excluded.topic,
     node_id = excluded.node_id,
@@ -86,19 +123,25 @@ ON CONFLICT(id) DO UPDATE SET
     prompt_md = excluded.prompt_md,
     answer = excluded.answer,
     answer_type = excluded.answer_type,
-    reference_hash = COALESCE(excluded.reference_hash, questions.reference_hash)
+    reference_hash = COALESCE(excluded.reference_hash, questions.reference_hash),
+    answer_tolerance = excluded.answer_tolerance
 """
 
 
 BUSY_TIMEOUT_SECONDS = 30.0
 
 
+_ADDED_COLUMNS = {"reference_hash": "TEXT", "answer_tolerance": "REAL"}
+
+
 def _migrate(conn: sqlite3.Connection) -> None:
     """Bring a database created by an older version up to date (idempotent, race-safe)."""
     cols = {r["name"] for r in conn.execute("PRAGMA table_info(questions)")}
-    if "reference_hash" not in cols:
+    for name, sql_type in _ADDED_COLUMNS.items():
+        if name in cols:
+            continue
         try:
-            conn.execute("ALTER TABLE questions ADD COLUMN reference_hash TEXT")
+            conn.execute(f"ALTER TABLE questions ADD COLUMN {name} {sql_type}")
             conn.commit()
         except sqlite3.OperationalError as exc:  # another process added it first
             if "duplicate column" not in str(exc).lower():
@@ -252,3 +295,22 @@ def set_verification(
             "UPDATE questions SET status = ?, verification = ? WHERE id = ?",
             (checked.status.value, checked.verification.model_dump_json(), question_id),
         )
+
+
+def list_playable(conn: sqlite3.Connection, source_kind: str = "curated") -> list[Question]:
+    """Questions a user may see: ``trusted`` only, from one pool (curated by default).
+
+    This is the only accessor the UI should use. Fresh, flagged and retired questions are never
+    returned, whatever their pool.
+    """
+    sql = "SELECT * FROM questions WHERE status = 'trusted' AND source_kind = ? ORDER BY id"
+    with closing(conn.execute(sql, (source_kind,))) as cur:
+        return [question_from_row(r) for r in cur.fetchall()]
+
+
+def get_playable(conn: sqlite3.Connection, question_id: str) -> Question | None:
+    """One trusted curated question by id, or None (also None if it is fresh, flagged, retired)."""
+    sql = "SELECT * FROM questions WHERE id = ? AND status = 'trusted' AND source_kind = 'curated'"
+    with closing(conn.execute(sql, (question_id,))) as cur:
+        row = cur.fetchone()
+    return question_from_row(row) if row else None
