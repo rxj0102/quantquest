@@ -12,7 +12,7 @@ From the repository root, with the project virtualenv in place (`.venv`, or set 
 scripts/mutation/dice_event.sh     # the dice_event simulator (28 mutants, about a minute)
 scripts/mutation/m4.sh             # the M4 logic: answers, XP and streaks, practice, interview,
                                    # visibility, reference hash, worker pool (28 mutants)
-scripts/mutation/parsing.sh        # verify/parsing.py, the expression parser (35 mutants)
+scripts/mutation/parsing.sh        # verify/parsing.py, the expression parser (37 mutants)
 scripts/mutation/timeout.sh        # verify/timeout.py, the worker pool (28 mutants, can take 10+ minutes
                                    # because mutants that hang are stopped by MUTATION_TIMEOUT)
 scripts/mutation/pricing.sh        # verify/pricing.py, Black-Scholes and the tree (34 mutants)

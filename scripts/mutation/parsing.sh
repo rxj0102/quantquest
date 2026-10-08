@@ -50,6 +50,9 @@ P 's|abs(right) > MAX_EXPONENT:|abs(right) > MAX_EXPONENT * 1000:|'
 P 's|            if digits > MAX_DIGITS_ESTIMATE:|            if False:|'
 P 's|            return None if right == 0 else left / right|            return left / right|'
 P 's|        return None if v is None else (-v if isinstance(node.op, ast.USub) else v)|        return None if v is None else v|'
+# --- the fixes to the constant evaluator (safe_parse must raise only ParseRejected)
+P 's|        if isinstance(node.value, float) and not math.isfinite(node.value):|        if False:|'
+P 's|math.log10(abs(left.numerator)) - math.log10(left.denominator)|math.log10(abs(left))|'
 # --- error wrapping
 P 's|    except ParseRejected:|    except KeyError:|'
 summary
