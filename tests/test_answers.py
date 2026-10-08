@@ -83,6 +83,33 @@ def test_integer_answers_reject_anything_not_exact_even_within_the_ui_tolerance(
     assert r.outcome == "incorrect" and r.tolerance == 0.0, typed
 
 
+@pytest.mark.parametrize("answer", [0, 1, -4, 17, 385, 5000, 123456])
+def test_an_integer_answer_one_unit_off_is_rejected_at_any_magnitude(answer: int) -> None:
+    """Off by one is wrong for an exact integer, even where 1 is far inside the 1e-3 UI tolerance.
+
+    At 5000 and 123456 an off-by-one answer is only 2e-4 and 8e-6 away in relative terms, so these
+    cases fail if integer answers are ever given the UI tolerance (17 alone would not show it).
+    """
+    q = Question.model_validate(make_question(answer=str(answer)))
+    assert check(q, str(answer)).outcome == "correct"
+    for typed in (str(answer - 1), str(answer + 1)):
+        r = check(q, typed)
+        assert r.outcome == "incorrect" and r.tolerance == 0.0, (answer, typed)
+
+
+def test_every_curated_integer_answer_rejects_one_unit_off(by_id) -> None:
+    checked = 0
+    for q in by_id.values():
+        if q.answer_type.value != "numeric" or not is_integer_answer(q.answer):
+            continue
+        value = int(q.answer)
+        assert check(q, str(value)).outcome == "correct", q.id
+        assert check(q, str(value + 1)).outcome == "incorrect", q.id
+        assert check(q, str(value - 1)).outcome == "incorrect", q.id
+        checked += 1
+    assert checked >= 5  # guard against a vacuous pass: the pool has integer answers
+
+
 def test_integer_override_allows_a_tolerance(by_id) -> None:
     q = by_id["stat-002"].model_copy(update={"answer_tolerance": 0.01})
     assert check(q, "17.1").outcome == "correct"  # 0.59% off, inside the override
