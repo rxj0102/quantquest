@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # Mutation run for verify/timeout.py (the hard-timeout worker pool).
-# Tests run: the module's own tests and the exact/symbolic checks that depend on it.
+# Tests run: the pool tests first (they fail fast; the harness stops at the first failure), the
+# module's own tests, and the exact/symbolic checks that depend on it.
 # Run it alone: it edits source files temporarily. See scripts/mutation/README.md.
 # Mutants that remove a kill or a slot release can hang the tests; the harness times them out.
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 F=verify/timeout.py
-T="tests/verify/test_timeout.py tests/verify/test_sympy_check.py"
+T="tests/verify/test_timeout_pool.py tests/verify/test_timeout.py tests/verify/test_sympy_check.py"
 # shellcheck disable=SC2086
 baseline $T
 # shellcheck disable=SC2086
