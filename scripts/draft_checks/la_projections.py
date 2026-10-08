@@ -8,7 +8,6 @@ null-space basis, or a one-variable minimisation.
 from __future__ import annotations
 
 import numpy as np
-import sympy as sp
 from scipy.linalg import null_space
 
 
@@ -16,14 +15,6 @@ def linalg_013() -> float:
     """The projection is zero iff v is orthogonal to u: v must lie in u's null-space complement."""
     (direction,) = null_space(np.array([[2.0, -1.0]])).T  # unit vector perpendicular to u
     return float(6.0 * direction[1] / direction[0])  # scale so the first entry is 6
-
-
-def linalg_014() -> sp.Expr:
-    """Minimise |v - c u|^2 over c with calculus, then square the length of c u."""
-    a, b, c = sp.symbols("a b c", real=True)
-    dist2 = (a - 3 * c) ** 2 + (b - 4 * c) ** 2
-    (c_star,) = sp.solve(sp.diff(dist2, c), c)
-    return sp.expand(c_star**2 * 25)
 
 
 def linalg_015() -> float:
@@ -64,7 +55,6 @@ def linalg_019() -> float:
 
 CHECKS = {
     "linalg-013": linalg_013,
-    "linalg-014": linalg_014,
     "linalg-015": linalg_015,
     "linalg-016": linalg_016,
     "linalg-017": linalg_017,

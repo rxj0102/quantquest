@@ -19,30 +19,6 @@
     exact:
       expr: solve(6*2 + k*(-1), k)[0]
 
-- id: linalg-014
-  topic: linear_algebra
-  node_id: la.projections
-  difficulty: 2
-  format: derivation
-  prompt_md: |
-    The vector $v=(a,b)^T$ is projected orthogonally onto the line spanned by $u=(3,4)^T$. What is
-    the squared length of the projection? Give your answer as a single expression in $a$ and $b$.
-  answer: "(3*a + 4*b)**2/25"
-  answer_type: symbolic
-  solution_md: |
-    The projection is $\dfrac{v\cdot u}{u\cdot u}\,u=\dfrac{3a+4b}{25}\,u$, and $|u|^2=25$, so its
-    squared length is
-    $$
-    \frac{(3a+4b)^2}{25^2}\cdot 25=\frac{(3a+4b)^2}{25}.
-    $$
-  source: curated
-  status: fresh
-  reference:
-    exact:
-      expr: >-
-        det(Matrix([[a, b]])*Matrix([[3], [4]])*(Matrix([[3, 4]])*Matrix([[3], [4]]))**(-1)
-        *Matrix([[3, 4]])*Matrix([[a], [b]]))
-
 - id: linalg-015
   topic: linear_algebra
   node_id: la.projections
