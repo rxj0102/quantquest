@@ -47,10 +47,11 @@
   difficulty: 2
   format: mental_math
   prompt_md: |
-    Take $n=5$ independent observations, each with true variance $\sigma^2=10$. The variance is
-    estimated by $\frac15\sum_{i=1}^{5}(X_i-\bar X)^2$, with divisor $n=5$ rather than $4$. Define
-    the bias of an estimator as $E[\text{estimator}]-\sigma^2$ (its expected value minus the true
-    variance). What is the bias of this estimator? Give your answer as an integer.
+    Let $X_1,\dots,X_5$ be independent and identically distributed, with common mean $\mu$ and
+    common variance $\sigma^2=10$, so $n=5$. The variance is estimated by
+    $\frac15\sum_{i=1}^{5}(X_i-\bar X)^2$, with divisor $n=5$ rather than $4$. Define the bias of
+    an estimator as $E[\text{estimator}]-\sigma^2$ (its expected value minus the true variance).
+    What is the bias of this estimator? Give your answer as an integer.
   answer: "-2"
   answer_type: numeric
   solution_md: |
