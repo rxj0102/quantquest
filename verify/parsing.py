@@ -128,6 +128,8 @@ def _const_value(node: ast.AST) -> Fraction | None:
     Raises ParseRejected for numeric subtrees that would be huge, before computing them.
     """
     if isinstance(node, ast.Constant) and type(node.value) in (int, float):
+        if isinstance(node.value, float) and not math.isfinite(node.value):
+            raise ParseRejected("numeric literal out of range")
         return Fraction(node.value)
     if isinstance(node, ast.UnaryOp):
         v = _const_value(node.operand)

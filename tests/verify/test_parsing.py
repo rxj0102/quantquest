@@ -136,3 +136,11 @@ def test_declared_symbol_assumptions() -> None:
         symbols={"x": "positive", "lam": "positive"},
     )
     assert sp.simplify(e.doit() - 2 / sp.Symbol("lam", positive=True) ** 2) == 0
+
+
+@pytest.mark.parametrize("text", ["2**1e999", "1e999**2", "2**(1e999)", "(1e999+1)**2"])
+def test_non_finite_float_literal_in_a_power_is_a_clean_rejection(text: str) -> None:
+    """safe_parse may only raise ParseRejected. A float literal that overflows to inf used to
+    escape from the exact-value pre-check as an OverflowError."""
+    with pytest.raises(ParseRejected):
+        safe_parse(text)
