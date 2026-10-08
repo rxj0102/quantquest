@@ -3,18 +3,24 @@
 Game-style learning app for quant interview prep. See `CLAUDE.md` for rules and `PLAN.md` for milestones.
 
 ## What the trust boundary protects
-A curated question starts `fresh`. `verify.promote` (and the app's first page load) checks its answer
-against the independent `reference:` in its YAML entry: exact SymPy (relative tolerance 1e-9, or
-symbolic equivalence), plus Monte Carlo (fixed seed, at least 1e6 trials, within 3 standard errors)
-for probability questions, or Black-Scholes against a binomial tree for prices. Only if every check
-passes is it `trusted`; editing its prompt, answer or reference resets it to `fresh`. Text and case
-answers have no code check, so they can never be trusted, and only the curated pool is promoted. A
-failed check makes the question `flagged`: hidden from the app and every default query, and printed
-with the evidence (`verify.promote` exits 1). A check that cannot run (bad reference, timeout)
-leaves it `fresh`. Tests: known-bad and near-miss cases per verifier, every curated answer perturbed
-must fail, every YAML reference must match an independent value in `scripts/`, and mutation testing
-(`scripts/mutation/`). Limit: Monte Carlo cannot separate answers within about 3 standard errors, so
-the exact reference is the real gate.
+- **How an answer becomes trusted.** A curated question starts `fresh`. `verify.promote` (and the
+  app's first page load) checks its answer against the independent `reference:` in its YAML entry:
+  exact SymPy (relative tolerance 1e-9, or symbolic equivalence), plus Monte Carlo (fixed seed, at
+  least 1e6 trials, within 3 standard errors) for probability questions, or Black-Scholes against
+  a binomial tree for prices. Only if every check passes is it `trusted`. Editing a question's
+  prompt, answer, answer type or reference resets it to `fresh`.
+- **What can never be trusted.** Text and case answers have no code check, so promotion leaves
+  them `fresh`, and the schema refuses `trusted` on a text answer. Only the curated pool is promoted.
+- **How failures are handled.** A failed check makes the question `flagged`: hidden from the app
+  and every default query, and printed with the evidence (`verify.promote` exits 1). A check that
+  cannot run (bad reference, timeout) leaves it `fresh`.
+- **How it is tested.** Known-bad cases for each verifier, plus near-miss answers for the numeric,
+  symbolic, Monte Carlo and pricing checks; every curated numeric or symbolic answer is perturbed
+  and must fail; every YAML reference must match an independent value in `scripts/`. Mutation
+  testing (`scripts/mutation/`) currently covers the `dice_event` simulator and the app logic; the
+  core verifiers are being added.
+- **Known limit.** Monte Carlo cannot separate answers within about 3 standard errors, so the exact
+  reference is the real gate.
 
 ## Setup
 ```
