@@ -26,7 +26,7 @@ scripts/mutation/mutate.sh verify/answers.py \
 
 | line starts with | meaning |
 |---|---|
-| `CAUGHT` | the tests failed with the bug in: good |
+| `CAUGHT` | the tests failed with the bug in: good. A mutant that makes the tests hang is stopped after `MUTATION_TIMEOUT` seconds (default 300) and also counted as caught, with `(the tests hung ...)` in the line, because a hung test run would fail CI too. Keep the limit well above the normal run time, or a slow but passing run would be miscounted as caught |
 | `SURVIVED` | the tests still passed: either a gap in the tests, or an equivalent mutant (the change does not alter behaviour). Read the mutant and decide; do not assume either |
 | `INVALID` | pytest did not run the tests properly (an import error, a syntax error in the mutated file). Not a verdict |
 | `NO-OP` | the sed expression changed nothing (the code it matched has moved). Fix the expression |
