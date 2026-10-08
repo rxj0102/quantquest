@@ -161,3 +161,28 @@ def test_huge_numeric_base_only_ever_raises_parse_rejected(text: str) -> None:
 def test_huge_numeric_base_to_a_large_power_is_rejected() -> None:
     with pytest.raises(ParseRejected):
         safe_parse("(10**1000)**3")
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "(1/10**400)**2",
+        "(10**-400)**2",
+        "(1/10**324)**2",
+        "(1e-300*1e-300)**2",
+        "(0.1**400)**2",
+        "((1/3)**1000)**2",
+        "(3**1000/7**1000)**2",
+    ],
+)
+def test_tiny_numeric_base_only_ever_raises_parse_rejected(text: str) -> None:
+    """A base below the float range converted to 0.0 and math.log10 raised ValueError."""
+    try:
+        safe_parse(text)
+    except ParseRejected:
+        pass
+
+
+def test_tiny_numeric_base_to_a_large_power_is_rejected() -> None:
+    with pytest.raises(ParseRejected):
+        safe_parse("(1/10**1000)**3")

@@ -153,11 +153,10 @@ def _const_value(node: ast.AST) -> Fraction | None:
                 return None
             if left == 0:
                 return None if right < 0 else Fraction(0)
-            # log10(Fraction) converts to float first and overflows past 1e308 for integers.
-            if left.denominator == 1:
-                digits = math.log10(abs(left.numerator)) * abs(int(right))
-            else:
-                digits = abs(math.log10(abs(left))) * abs(int(right))
+            # log10(Fraction) converts to float first: it overflows past 1e308 and hits log10(0)
+            # below 1e-324. Take the logs of the exact integers instead.
+            magnitude = math.log10(abs(left.numerator)) - math.log10(left.denominator)
+            digits = abs(magnitude) * abs(int(right))
             if digits > MAX_DIGITS_ESTIMATE:
                 raise ParseRejected("numeric power too large")
             return left ** int(right)
