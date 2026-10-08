@@ -17,8 +17,11 @@ Game-style learning app for quant interview prep. See `CLAUDE.md` for rules and 
 - **How it is tested.** Known-bad cases for each verifier, plus near-miss answers for the numeric,
   symbolic, Monte Carlo and pricing checks; every curated numeric or symbolic answer is perturbed
   and must fail; every YAML reference must match an independent value in `scripts/`. Mutation
-  testing (`scripts/mutation/`) currently covers the `dice_event` simulator and the app logic; the
-  core verifiers are being added.
+  testing (`scripts/mutation/`) covers the `dice_event` simulator, the app logic, and three
+  verifiers: `parsing` (31 of 37 mutants caught), `timeout` (22 of 28) and `pricing` (33 of 34).
+  The 13 survivors are equivalent or likely equivalent and are listed, 5 of them unproven, in
+  `scripts/mutation/SURVIVORS.md`. `sympy_check`, `monte_carlo` and `code_runner` are not covered
+  yet.
 - **Known limit.** Monte Carlo cannot separate answers within about 3 standard errors, so the exact
   reference is the real gate.
 
