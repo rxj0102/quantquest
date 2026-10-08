@@ -1,8 +1,7 @@
 """Curated questions together with their references.
 
-A reference normally lives in the question's own YAML entry (``reference:``), so adding a question
-is a single-file edit. ``CURATED_REFERENCES`` in ``verify.references`` remains as a fallback for
-entries without one; if both exist they must agree, so the two can never silently diverge.
+A reference lives in the question's own YAML entry (``reference:``), so adding a question is a
+single-file edit. The YAML is the only source: there is no separate registry to keep in step.
 
 ``reference_hash`` fingerprints the *parsed* reference (key order, whitespace and explicit
 defaults do not matter). The database stores it next to each question, and a change to it
@@ -13,7 +12,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -21,7 +19,7 @@ from pydantic import ValidationError
 
 from core.loader import DEFAULT_DIR, Entry, LoadError, load_entries, load_file_entries
 from core.schema import Question
-from verify.references import CURATED_REFERENCES, Reference
+from verify.references import Reference
 
 NO_REFERENCE_HASH = "none"  # stored for questions that have no reference at all
 
@@ -38,54 +36,40 @@ def reference_hash(reference: Reference | None) -> str:
 
 @dataclass(frozen=True)
 class CuratedEntry:
-    """A curated question, its reference, where the reference came from, and its hash."""
+    """A curated question, its reference, whether it has one, and the reference's hash."""
 
     question: Question
     reference: Reference | None
-    source: str  # "yaml" | "registry" | "none"
+    source: str  # "yaml" (has a reference) | "none"
     reference_hash: str
 
 
-def _convert(entry: Entry, registry: Mapping[str, Reference]) -> CuratedEntry:
-    """Turn a raw YAML entry into a ``CuratedEntry`` (YAML reference first, registry fallback)."""
-    qid = entry.question.id
+def _convert(entry: Entry) -> CuratedEntry:
+    """Turn a raw YAML entry into a ``CuratedEntry``."""
     reference: Reference | None = None
-    source = "none"
     if entry.reference is not None:
         try:
             reference = Reference.model_validate(entry.reference)
         except ValidationError as exc:
-            raise LoadError(f"{entry.path}: question {qid}: invalid reference: {exc}") from exc
-        source = "yaml"
-        fallback = registry.get(qid)
-        if fallback is not None and reference_hash(fallback) != reference_hash(reference):
             raise LoadError(
-                f"{entry.path}: question {qid}: reference in YAML differs from the registry "
-                "entry in verify.references; remove one or make them equal"
-            )
-    elif qid in registry:
-        reference, source = registry[qid], "registry"
-    return CuratedEntry(entry.question, reference, source, reference_hash(reference))
+                f"{entry.path}: question {entry.question.id}: invalid reference: {exc}"
+            ) from exc
+    return CuratedEntry(
+        entry.question, reference, "yaml" if reference else "none", reference_hash(reference)
+    )
 
 
-def load_curated(
-    directory: Path = DEFAULT_DIR,
-    registry: Mapping[str, Reference] | None = CURATED_REFERENCES,
-) -> list[CuratedEntry]:
-    """Load curated entries, taking each reference from its YAML block, else from ``registry``.
+def load_curated(directory: Path = DEFAULT_DIR) -> list[CuratedEntry]:
+    """Load curated entries, each with the reference from its YAML block.
 
-    Raises ``LoadError`` (naming the file and question) for an invalid reference, or when the YAML
-    and the registry both define a reference for a question and they differ.
+    Raises ``LoadError`` (naming the file and question) for an invalid reference.
     """
-    registry = registry or {}
-    return [_convert(entry, registry) for entry in load_entries(directory)]
+    return [_convert(entry) for entry in load_entries(directory)]
 
 
-def load_curated_file(
-    path: Path, registry: Mapping[str, Reference] | None = None
-) -> list[CuratedEntry]:
-    """Load one YAML file the same way (used for drafts; no registry fallback by default)."""
-    return [_convert(entry, registry or {}) for entry in load_file_entries(path)]
+def load_curated_file(path: Path) -> list[CuratedEntry]:
+    """Load one YAML file the same way (used for drafts)."""
+    return [_convert(entry) for entry in load_file_entries(path)]
 
 
 def references_by_id(entries: list[CuratedEntry]) -> dict[str, Reference]:

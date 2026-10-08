@@ -6,9 +6,8 @@ from core import db
 from core.loader import load_questions
 from core.schema import Status
 from core.skill_tree import TreeError, load_tree
-from tests.pool import N_TRUSTED
+from tests.pool import N_TRUSTED, YAML_REFERENCES
 from verify.promote import promote_curated
-from verify.references import CURATED_REFERENCES
 
 OLD_NODE_IDS = {
     "prob-008": "prob.random_walks",
@@ -26,7 +25,7 @@ def test_reloading_after_the_node_id_merge_leaves_all_curated_trusted() -> None:
 
     conn = db.connect(":memory:")
     db.upsert_questions(conn, old_yaml)  # a database built before the merge
-    report = promote_curated(conn, CURATED_REFERENCES)  # real verification
+    report = promote_curated(conn, YAML_REFERENCES)  # real verification
     assert len(report.promoted) == N_TRUSTED and report.flagged == []
     db.record_attempt(conn, "prob-008", correct=True)
     verification_before = {q.id: q.verification for q in db.list_questions(conn, status="trusted")}

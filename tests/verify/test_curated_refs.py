@@ -10,11 +10,11 @@ import yaml
 from core import db
 from core.loader import DEFAULT_DIR, LoadError, load_entries, load_questions
 from core.schema import AnswerType, Status
-from tests.pool import N_CURATED, N_TRUSTED
+from tests.pool import N_CURATED, N_TRUSTED, YAML_REFERENCES
 from verify.curated import load_curated, reference_hash
 from verify.promote import main as promote_main
 from verify.promote import promote_curated
-from verify.references import CURATED_REFERENCES, ExactSpec, Reference
+from verify.references import ExactSpec, Reference
 
 # --- loading ---------------------------------------------------------------------------------
 
@@ -39,9 +39,9 @@ def edit_entry(directory: Path, qid: str, fn: Callable[[dict], None]) -> None:
     raise AssertionError(qid)
 
 
-def sync(conn, directory: Path, registry: dict | None = None):
+def sync(conn, directory: Path):
     """What bootstrap does: load entries, upsert with reference hashes, return references."""
-    entries = load_curated(directory, registry={} if registry is None else registry)
+    entries = load_curated(directory)
     db.upsert_questions(
         conn, [e.question for e in entries], {e.question.id: e.reference_hash for e in entries}
     )
@@ -61,14 +61,14 @@ def test_non_mapping_reference_is_a_load_error(tmp_path: Path, bad: object) -> N
     d = curated_copy(tmp_path)
     edit_entry(d, "prob-001", lambda item: item.update(reference=bad))
     with pytest.raises(LoadError, match=r"prob-001.*reference|reference.*prob-001"):
-        load_curated(d, registry={})
+        load_curated(d)
 
 
 def test_unknown_field_in_a_reference_names_the_file_and_question(tmp_path: Path) -> None:
     d = curated_copy(tmp_path)
     edit_entry(d, "prob-002", lambda item: item["reference"].update(evil="x"))
     with pytest.raises(LoadError, match=r"probability\.yaml.*prob-002"):
-        load_curated(d, registry={})
+        load_curated(d)
 
 
 def test_invalid_simulator_or_spec_values_are_load_errors(tmp_path: Path) -> None:
@@ -77,45 +77,19 @@ def test_invalid_simulator_or_spec_values_are_load_errors(tmp_path: Path) -> Non
         d, "prob-001", lambda item: item["reference"]["exact"].update(symbols={"a": "weird"})
     )
     with pytest.raises(LoadError, match="prob-001"):
-        load_curated(d, registry={})
+        load_curated(d)
 
 
-# --- migration: YAML and registry agree --------------------------------------------------------
+# --- the YAML is the only source of references ---------------------------------------------------
 
 
 def test_every_non_text_curated_question_carries_its_reference_in_yaml() -> None:
-    entries = {e.question.id: e for e in load_curated(registry={})}
+    entries = {e.question.id: e for e in load_curated()}
     for qid, e in entries.items():
         if e.question.answer_type is AnswerType.TEXT:
             assert e.reference is None and e.source == "none", qid
         else:
             assert e.reference is not None and e.source == "yaml", qid
-
-
-def test_yaml_references_equal_the_registry_entries() -> None:
-    from_yaml = {e.question.id: e.reference for e in load_curated(registry={}) if e.reference}
-    assert set(from_yaml) == set(CURATED_REFERENCES)
-    for qid, ref in from_yaml.items():
-        assert ref == CURATED_REFERENCES[qid], qid
-        assert reference_hash(ref) == reference_hash(CURATED_REFERENCES[qid]), qid
-
-
-def test_registry_still_works_as_a_fallback(tmp_path: Path) -> None:
-    d = curated_copy(tmp_path)
-    edit_entry(d, "prob-001", lambda item: item.pop("reference"))
-    with_fallback = {e.question.id: e for e in load_curated(d)}
-    assert with_fallback["prob-001"].source == "registry"
-    assert with_fallback["prob-001"].reference == CURATED_REFERENCES["prob-001"]
-    without = {e.question.id: e for e in load_curated(d, registry={})}
-    assert without["prob-001"].reference is None and without["prob-001"].source == "none"
-
-
-def test_yaml_and_registry_may_not_silently_disagree(tmp_path: Path) -> None:
-    d = curated_copy(tmp_path)
-    edit_entry(d, "prob-001", lambda item: item["reference"]["exact"].update(expr="1/8"))
-    with pytest.raises(LoadError, match=r"prob-001.*registry"):
-        load_curated(d)  # default registry present and different
-    load_curated(d, registry={})  # fine once the registry is out of the picture
 
 
 # --- the hash ------------------------------------------------------------------------------------
@@ -136,7 +110,7 @@ def test_hashes_are_stored_with_the_question(tmp_path: Path) -> None:
     conn = db.connect(":memory:")
     sync(conn, DEFAULT_DIR)
     got = dict(conn.execute("SELECT id, reference_hash FROM questions").fetchall())
-    assert got["prob-001"] == reference_hash(CURATED_REFERENCES["prob-001"])
+    assert got["prob-001"] == reference_hash(YAML_REFERENCES["prob-001"])
     assert got["stat-005"] == reference_hash(None)
     assert all(v is not None for v in got.values())
 
@@ -146,7 +120,7 @@ def test_hashes_are_stored_with_the_question(tmp_path: Path) -> None:
 
 def test_a_every_curated_question_verifies_from_yaml_alone_and_is_trusted() -> None:
     conn = db.connect(":memory:")
-    refs = sync(conn, DEFAULT_DIR)  # registry={}: the YAML is the only source
+    refs = sync(conn, DEFAULT_DIR)  # the YAML is the only source
     report = promote_curated(conn, refs)
     assert len(report.promoted) == N_TRUSTED and report.flagged == []
     assert [u.question_id for u in report.unverified] == ["stat-005"]
@@ -161,10 +135,10 @@ def test_a_promotion_cli_uses_the_yaml_references(
 
 
 def test_a_a_legacy_database_keeps_everything_trusted_after_the_migration() -> None:
-    """A database promoted by the old registry-only flow (no reference hashes yet)."""
+    """A database promoted before reference hashes existed (no hashes stored yet)."""
     conn = db.connect(":memory:")
     db.upsert_questions(conn, load_questions())  # old flow: no hashes
-    assert promote_curated(conn, CURATED_REFERENCES).flagged == []
+    assert promote_curated(conn, YAML_REFERENCES).flagged == []
     assert (
         conn.execute("SELECT COUNT(*) FROM questions WHERE reference_hash IS NOT NULL").fetchone()[
             0
@@ -244,7 +218,7 @@ def test_b_a_substantive_reference_edit_resets_trust_then_reverification_restore
 def test_b_removing_a_reference_resets_trust_and_it_cannot_come_back(trusted_world) -> None:
     d, conn = trusted_world
     edit_entry(d, "stat-002", lambda i: i.pop("reference"))
-    refs = sync(conn, d)  # registry={} : nothing to fall back on
+    refs = sync(conn, d)  # nothing to fall back on
     assert state(conn, "stat-002")[0] is Status.FRESH
     report = promote_curated(conn, refs)
     assert [u.question_id for u in report.unverified if u.question_id == "stat-002"] == ["stat-002"]

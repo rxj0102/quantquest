@@ -2,10 +2,11 @@ import pytest
 
 from core.schema import AnswerType, Question, Status
 from tests.conftest import make_question
+from tests.pool import YAML_REFERENCES
 from verify.code_runner import CodeSpec
 from verify.dispatch import verify_question
 from verify.pricing import PricingSpec
-from verify.references import CURATED_REFERENCES, ExactSpec, Reference, SimulatorSpec
+from verify.references import ExactSpec, Reference, SimulatorSpec
 
 DICE = SimulatorSpec(name="dice_sum_equals", params={"n_dice": 2, "sides": 6, "target": 9})
 
@@ -16,7 +17,7 @@ def q(**kw: object) -> Question:
 
 @pytest.fixture(scope="module")
 def curated_results(curated_module: list[Question]):
-    return {x.id: verify_question(x, CURATED_REFERENCES.get(x.id)) for x in curated_module}
+    return {x.id: verify_question(x, YAML_REFERENCES.get(x.id)) for x in curated_module}
 
 
 @pytest.fixture(scope="module")
@@ -83,7 +84,7 @@ def test_every_curated_answer_fails_when_perturbed(curated_module) -> None:
         if x.answer_type is AnswerType.TEXT:
             continue
         for wrong in _mutations(x):
-            v = verify_question(x.model_copy(update={"answer": wrong}), CURATED_REFERENCES[x.id])
+            v = verify_question(x.model_copy(update={"answer": wrong}), YAML_REFERENCES[x.id])
             assert v.result == "fail", (x.id, wrong, v.details)
             n += 1
     assert n >= 54

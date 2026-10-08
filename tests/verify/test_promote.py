@@ -7,9 +7,9 @@ from core import db
 from core.loader import load_questions
 from core.schema import Question, Status
 from tests.conftest import make_question
-from tests.pool import N_TRUSTED
+from tests.pool import N_TRUSTED, YAML_REFERENCES
 from verify.promote import PromotionReport, main, promote_curated
-from verify.references import CURATED_REFERENCES, ExactSpec, Reference
+from verify.references import ExactSpec, Reference
 
 
 @pytest.fixture
@@ -24,7 +24,7 @@ def conn() -> sqlite3.Connection:
 def promoted_report_and_db(tmp_path_factory):
     c = db.connect(":memory:")
     db.upsert_questions(c, load_questions())
-    report = promote_curated(c, CURATED_REFERENCES)
+    report = promote_curated(c, YAML_REFERENCES)
     return report, c
 
 
@@ -47,7 +47,7 @@ def test_unverifiable_stays_fresh(promoted_report_and_db) -> None:
 
 def test_promotion_is_idempotent(promoted_report_and_db) -> None:
     _, c = promoted_report_and_db
-    again = promote_curated(c, CURATED_REFERENCES)
+    again = promote_curated(c, YAML_REFERENCES)
     assert again.promoted == [] and again.flagged == []
     assert len(db.list_questions(c, status="trusted")) == N_TRUSTED
 
@@ -65,7 +65,7 @@ def _break_answer(conn: sqlite3.Connection, qid: str, wrong: str) -> None:
 
 def test_failed_verification_flags_and_reports(conn: sqlite3.Connection) -> None:
     _break_answer(conn, "prob-001", "1/8")
-    report = promote_curated(conn, CURATED_REFERENCES)
+    report = promote_curated(conn, YAML_REFERENCES)
     assert [f.question_id for f in report.flagged] == ["prob-001"]
     assert len(report.promoted) == N_TRUSTED - 1
     flagged = db.get_question(conn, "prob-001", include_hidden=True)
@@ -83,7 +83,7 @@ def test_flagged_questions_are_hidden_from_every_user_facing_query(
     conn: sqlite3.Connection,
 ) -> None:
     _break_answer(conn, "prob-001", "1/8")
-    promote_curated(conn, CURATED_REFERENCES)
+    promote_curated(conn, YAML_REFERENCES)
     assert db.get_question(conn, "prob-001") is None
     assert "prob-001" not in {x.id for x in db.list_questions(conn)}
     assert "prob-001" not in {x.id for x in db.list_questions(conn, source_kind="curated")}
@@ -102,24 +102,24 @@ def test_flagged_stays_flagged_on_unchanged_reload_and_resets_when_edited(
     conn: sqlite3.Connection,
 ) -> None:
     _break_answer(conn, "prob-001", "1/8")
-    promote_curated(conn, CURATED_REFERENCES)
+    promote_curated(conn, YAML_REFERENCES)
     db.upsert_questions(conn, [db.get_question(conn, "prob-001", include_hidden=True)])
     assert db.get_question(conn, "prob-001", include_hidden=True).status is Status.FLAGGED
     db.upsert_questions(conn, [x for x in load_questions() if x.id == "prob-001"])  # fixed in YAML
     assert db.get_question(conn, "prob-001").status is Status.FRESH
-    report = promote_curated(conn, CURATED_REFERENCES)
+    report = promote_curated(conn, YAML_REFERENCES)
     assert [p.question_id for p in report.promoted] == ["prob-001"]
 
 
 def test_question_without_reference_stays_fresh(conn: sqlite3.Connection) -> None:
-    refs = {k: v for k, v in CURATED_REFERENCES.items() if k != "linalg-001"}
+    refs = {k: v for k, v in YAML_REFERENCES.items() if k != "linalg-001"}
     report = promote_curated(conn, refs)
     assert db.get_question(conn, "linalg-001").status is Status.FRESH
     assert {u.question_id for u in report.unverified} == {"stat-005", "linalg-001"}
 
 
 def test_error_during_verification_stays_fresh_not_flagged(conn: sqlite3.Connection) -> None:
-    refs = {**CURATED_REFERENCES, "linalg-001": Reference(exact=ExactSpec(expr="__import__('os')"))}
+    refs = {**YAML_REFERENCES, "linalg-001": Reference(exact=ExactSpec(expr="__import__('os')"))}
     report = promote_curated(conn, refs)
     assert db.get_question(conn, "linalg-001").status is Status.FRESH
     assert report.flagged == []
@@ -128,7 +128,7 @@ def test_error_during_verification_stays_fresh_not_flagged(conn: sqlite3.Connect
 def test_only_curated_fresh_questions_are_considered(conn: sqlite3.Connection) -> None:
     gen = Question.model_validate(make_question(id="gen-001", source="generated", answer="5/14"))
     db.upsert_questions(conn, [gen])
-    refs = {**CURATED_REFERENCES, "gen-001": CURATED_REFERENCES["prob-002"]}
+    refs = {**YAML_REFERENCES, "gen-001": YAML_REFERENCES["prob-002"]}
     promote_curated(conn, refs)
     assert db.get_question(conn, "gen-001").status is Status.FRESH
 
