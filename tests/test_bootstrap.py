@@ -149,7 +149,7 @@ def _migrate(path: str, barrier, out) -> None:
 
 
 def test_concurrent_migration_of_an_old_database(tmp_path: Path) -> None:
-    """A database from before M4 (no reference_hash / answer_tolerance), opened by 4 processes."""
+    """A database from before M4 (no reference_hash / answer_tolerance), opened by 8 processes."""
     path = tmp_path / "old.db"
     old = sqlite3.connect(path)
     old.executescript(
@@ -168,8 +168,8 @@ def test_concurrent_migration_of_an_old_database(tmp_path: Path) -> None:
     old.commit()
     old.close()
     ctx = mp.get_context("spawn")
-    barrier, out = ctx.Barrier(4), ctx.Queue()
-    procs = [ctx.Process(target=_migrate, args=(str(path), barrier, out)) for _ in range(4)]
+    barrier, out = ctx.Barrier(8), ctx.Queue()
+    procs = [ctx.Process(target=_migrate, args=(str(path), barrier, out)) for _ in range(8)]
     [p.start() for p in procs]
     results = [out.get(timeout=120) for _ in procs]
     [p.join(30) for p in procs]

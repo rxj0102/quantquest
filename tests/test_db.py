@@ -196,3 +196,58 @@ def test_set_verification_keeps_solve_stats(conn: sqlite3.Connection) -> None:
     ok = Verification(method="m", result="pass")
     db.set_verification(conn, "prob-999", ok, Status.TRUSTED)
     assert db.get_question(conn, "prob-999").solve_stats.attempts == 1
+
+
+# --- connect(): setup is retried when SQLite refuses it because of lock contention -----------------
+
+
+def test_connect_retries_setup_when_the_database_is_locked(tmp_path, monkeypatch) -> None:
+    calls = {"n": 0}
+    real = db._setup
+
+    def flaky(conn, *, wal):
+        calls["n"] += 1
+        if calls["n"] <= 3:
+            raise sqlite3.OperationalError("database is locked")
+        return real(conn, wal=wal)
+
+    monkeypatch.setattr(db, "_setup", flaky)
+    conn = db.connect(tmp_path / "qq.db")
+    assert calls["n"] == 4
+    assert conn.execute("SELECT COUNT(*) FROM questions").fetchone()[0] == 0
+    conn.close()
+
+
+def test_connect_gives_up_when_the_lock_never_clears(tmp_path, monkeypatch) -> None:
+    def always_locked(conn, *, wal):
+        raise sqlite3.OperationalError("database table is locked")
+
+    monkeypatch.setattr(db, "_setup", always_locked)
+    monkeypatch.setattr(db, "BUSY_TIMEOUT_SECONDS", 0.3)
+    with pytest.raises(sqlite3.OperationalError, match="locked"):
+        db.connect(tmp_path / "qq.db")
+
+
+def test_connect_does_not_retry_other_errors(tmp_path, monkeypatch) -> None:
+    calls = {"n": 0}
+
+    def broken(conn, *, wal):
+        calls["n"] += 1
+        raise sqlite3.OperationalError("no such table: nope")
+
+    monkeypatch.setattr(db, "_setup", broken)
+    with pytest.raises(sqlite3.OperationalError, match="no such table"):
+        db.connect(tmp_path / "qq.db")
+    assert calls["n"] == 1
+
+
+def test_connect_does_not_switch_journal_mode_again_when_already_wal(tmp_path) -> None:
+    first = db.connect(tmp_path / "qq.db")
+    assert first.execute("PRAGMA journal_mode").fetchone()[0] == "wal"
+    seen: list[str] = []
+    second = db.connect(tmp_path / "qq.db")
+    second.set_trace_callback(seen.append)
+    second.execute("PRAGMA journal_mode")
+    assert not any("journal_mode = WAL" in s for s in seen)
+    first.close()
+    second.close()

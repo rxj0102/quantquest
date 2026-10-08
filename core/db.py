@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import json
+import random
 import sqlite3
+import time
 from collections.abc import Iterable, Mapping
 from contextlib import closing
 from pathlib import Path
@@ -148,21 +150,41 @@ def _migrate(conn: sqlite3.Connection) -> None:
                 raise
 
 
+def _is_lock_error(exc: sqlite3.OperationalError) -> bool:
+    text = str(exc).lower()
+    return "locked" in text or "busy" in text
+
+
+def _setup(conn: sqlite3.Connection, *, wal: bool) -> None:
+    """Switch to WAL (once), create tables and migrate. Every step is idempotent."""
+    if wal and str(conn.execute("PRAGMA journal_mode").fetchone()[0]).lower() != "wal":
+        conn.execute("PRAGMA journal_mode = WAL")
+    conn.executescript(SCHEMA)
+    _migrate(conn)
+
+
 def connect(path: str | Path = ":memory:") -> sqlite3.Connection:
     """Open a connection with row access by name and create or migrate the tables.
 
-    Safe to call from several processes at once: SQLite serialises schema changes, writers wait up
-    to ``BUSY_TIMEOUT_SECONDS`` instead of failing, and file databases use WAL so readers are not
-    blocked by a writer.
+    Safe to call from several processes at once. Writers wait up to ``BUSY_TIMEOUT_SECONDS``
+    instead of failing, and file databases use WAL so readers are not blocked by a writer. The
+    one-time switch to WAL (and the first schema statements) can be refused immediately by SQLite
+    when other connections are opening the file at the same moment, without consulting the busy
+    timeout, so that setup is retried with a short random backoff until the timeout is reached.
     """
     conn = sqlite3.connect(str(path), timeout=BUSY_TIMEOUT_SECONDS)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
-    if str(path) != ":memory:":
-        conn.execute("PRAGMA journal_mode = WAL")
-    conn.executescript(SCHEMA)
-    _migrate(conn)
-    return conn
+    deadline = time.monotonic() + BUSY_TIMEOUT_SECONDS
+    while True:
+        try:
+            _setup(conn, wal=str(path) != ":memory:")
+            return conn
+        except sqlite3.OperationalError as exc:
+            if not _is_lock_error(exc) or time.monotonic() >= deadline:
+                conn.close()
+                raise
+            time.sleep(random.uniform(0.01, 0.1))
 
 
 def _to_row(q: Question, reference_hash: str | None = None) -> dict[str, object]:
