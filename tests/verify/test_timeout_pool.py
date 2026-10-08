@@ -99,6 +99,22 @@ def test_read_exact_joins_chunks(pipe, monkeypatch) -> None:
     assert mod._read_exact(r, 4, time.monotonic() + 0.2) == b"abcd"
 
 
+# --- slots (kept ahead of the other call-based tests: a leaked slot would hang the later ones) ---
+
+
+def test_every_way_a_call_can_end_gives_its_slot_back() -> None:
+    before = _free_slots()
+    assert before > 0
+    assert call_with_timeout(jobs.add, 1, 2, timeout=60) == 3
+    assert _free_slots() == before
+    with pytest.raises(CallTimeout):
+        call_with_timeout(jobs.add, 1, 2, timeout=0)
+    assert _free_slots() == before
+    with pytest.raises(CallFailed):
+        call_with_timeout(jobs.die, timeout=60)
+    assert _free_slots() == before
+
+
 # --- deadlines and dying workers through the public call ----------------------------------------
 
 
