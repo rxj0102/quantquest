@@ -192,15 +192,14 @@ def test_tiny_numeric_base_to_a_large_power_is_rejected() -> None:
 
 
 def test_length_limits_are_exact_for_answers_and_references() -> None:
-    from verify.parsing import MAX_REFERENCE_LEN
-
+    # The documented limits, written as literals so a changed constant cannot move the test.
     # Padding with spaces keeps the expression itself trivial, so only the length check can fire.
-    assert safe_parse("1" + " " * (MAX_LEN - 1)) == 1
+    assert safe_parse("1" + " " * 199) == 1
     with pytest.raises(ParseRejected, match="length"):
-        safe_parse("1" + " " * MAX_LEN)
-    assert safe_parse("1" + " " * (MAX_REFERENCE_LEN - 1), reference=True) == 1
+        safe_parse("1" + " " * 200)
+    assert safe_parse("1" + " " * 599, reference=True) == 1
     with pytest.raises(ParseRejected, match="length"):
-        safe_parse("1" + " " * MAX_REFERENCE_LEN, reference=True)
+        safe_parse("1" + " " * 600, reference=True)
 
 
 def test_literal_limit_is_exact() -> None:
