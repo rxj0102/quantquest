@@ -13,8 +13,8 @@ scripts/mutation/dice_event.sh     # the dice_event simulator (28 mutants, about
 scripts/mutation/m4.sh             # the M4 logic: answers, XP and streaks, practice, interview,
                                    # visibility, reference hash, worker pool (28 mutants)
 scripts/mutation/parsing.sh        # verify/parsing.py, the expression parser (37 mutants)
-scripts/mutation/timeout.sh        # verify/timeout.py, the worker pool (28 mutants, can take 10+ minutes
-                                   # because mutants that hang are stopped by MUTATION_TIMEOUT)
+scripts/mutation/timeout.sh        # verify/timeout.py, the worker pool (28 mutants; a mutant that hangs
+                                   # is stopped by MUTATION_TIMEOUT)
 scripts/mutation/pricing.sh        # verify/pricing.py, Black-Scholes and the tree (34 mutants)
 scripts/mutation/mutate.sh FILE 'SED-EXPRESSION' PYTEST-ARGS...    # one mutant by hand
 ```
@@ -74,11 +74,12 @@ single-line `sed` expression and will be reported as `NO-OP`.
 - The `abs_tol=1e-12` mutant in `verify/answers.py` (exact-integer answers must not get an absolute
   tolerance) is caught, by `test_exact_means_exact_even_at_floating_point_dust`.
 
-`parsing.sh`, `timeout.sh`, `pricing.sh` (first run, 2026-10-08): 97 mutants, 51 caught, 46
-survived, 0 invalid (parsing 12 of 35 caught, timeout 12 of 28, pricing 27 of 34). Of the 46
-survivors, 33 are test gaps and 13 are equivalent or very likely equivalent. Every survivor, with
-the input that separates it from the original, is in [SURVIVORS.md](SURVIVORS.md). No tests have
-been written for them yet.
+`parsing.sh`, `timeout.sh`, `pricing.sh` (second run, 2026-10-08, after the fixes and new tests):
+99 mutants, 86 caught, 13 survived, 0 invalid (parsing 31 of 37, timeout 22 of 28, pricing 33 of
+34). The first run had 97 mutants (35 + 28 + 34) and 51 caught; the second adds two parsing
+mutants that revert the `safe_parse` overflow fixes. All 33 test gaps from the first run are
+killed. The 13 survivors are equivalent (8, each probed) or likely equivalent and unproven (5);
+every one is listed with its reason in [SURVIVORS.md](SURVIVORS.md).
 
 Not covered by these scripts: the M2 `sympy_check`, `monte_carlo` and `code_runner` modules and
 the M3 core. Those were mutation tested during development, but the mutant lists and results were
