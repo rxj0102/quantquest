@@ -1,0 +1,244 @@
+# Curated statistics questions. All wording is original.
+# Each entry may carry a `reference:` block: the independent evidence used to verify it
+# (exact expression, named simulator, pricing inputs or code tests). Adding a question is a
+# single-file edit. Changing a reference sends the question back to `fresh` until re-verified.
+- id: stat-001
+  topic: statistics
+  node_id: stat.moments
+  difficulty: 1
+  format: mental_math
+  prompt_md: |
+    Independent observations each have variance $16$. What is the variance of the sample mean of $25$ of them?
+  answer: "16/25"
+  answer_type: numeric
+  solution_md: |
+    $\operatorname{Var}(\bar X) = \sigma^2/n = 16/25 = 0.64$.
+  source: curated
+  status: fresh
+  reference:
+    exact:
+      expr: 25*Rational(1, 25)**2*16
+
+- id: stat-002
+  topic: statistics
+  node_id: stat.moments
+  difficulty: 2
+  format: mental_math
+  prompt_md: |
+    Random variables $X$ and $Y$ have $\operatorname{Var}(X)=4$, $\operatorname{Var}(Y)=9$ and
+    $\operatorname{Cov}(X,Y)=2$. Find $\operatorname{Var}(X+Y)$.
+  answer: "17"
+  answer_type: numeric
+  solution_md: |
+    $\operatorname{Var}(X+Y) = 4 + 9 + 2\cdot 2 = 17$.
+  source: curated
+  status: fresh
+  reference:
+    exact:
+      expr: det(Matrix([[1, 1]])*Matrix([[4, 2], [2, 9]])*Matrix([[1], [1]]))
+
+- id: stat-003
+  topic: statistics
+  node_id: stat.moments
+  difficulty: 2
+  format: derivation
+  prompt_md: |
+    Let $X$ be exponentially distributed with rate $\lambda>0$. Give $\mathbb{E}[X^2]$ in terms of $\lambda$ (type it as `lam`).
+  answer: "2/lam**2"
+  answer_type: symbolic
+  solution_md: |
+    $\mathbb{E}[X^2] = \int_0^\infty x^2\lambda e^{-\lambda x}\,dx = 2/\lambda^2$
+    (equivalently $\operatorname{Var}(X)+\mathbb{E}[X]^2 = 1/\lambda^2 + 1/\lambda^2$).
+  source: curated
+  status: fresh
+  reference:
+    exact:
+      expr: Integral(x**2*lam*exp(-lam*x), (x, 0, oo))
+      symbols:
+        x: positive
+        lam: positive
+
+- id: stat-004
+  topic: statistics
+  node_id: stat.estimation
+  difficulty: 3
+  format: derivation
+  prompt_md: |
+    Five independent counts are modelled as Poisson with unknown rate $\lambda$ and come out as
+    $1, 0, 3, 2, 4$. What is the maximum likelihood estimate of $\lambda$?
+  answer: "2"
+  answer_type: numeric
+  solution_md: |
+    The log-likelihood is $\sum_i (x_i\ln\lambda - \lambda) + \text{const}$. Setting its derivative
+    to zero gives $\hat\lambda = \bar x = 10/5 = 2$.
+  source: curated
+  status: fresh
+  reference:
+    exact:
+      expr: solve(diff(10*log(lam) - 5*lam, lam), lam)[0]
+      symbols:
+        lam: positive
+
+- id: stat-005
+  topic: statistics
+  node_id: stat.estimation
+  difficulty: 3
+  format: derivation
+  prompt_md: |
+    Why is the sample variance usually computed with a divisor of $n-1$ rather than $n$?
+  answer: "Dividing by n-1 makes the estimator unbiased, because the sample mean is fitted to the same data and uses up one degree of freedom."
+  answer_type: text
+  solution_md: |
+    $\mathbb{E}\big[\sum_i (X_i-\bar X)^2\big] = (n-1)\sigma^2$, so dividing by $n$ underestimates
+    $\sigma^2$ by a factor $(n-1)/n$. Dividing by $n-1$ removes the bias.
+  source: curated
+  status: fresh
+
+- id: stat-006
+  topic: statistics
+  node_id: stat.estimation
+  difficulty: 2
+  format: mental_math
+  prompt_md: |
+    The population standard deviation is known to be $10$. A two-sided $95\%$ confidence interval
+    for the mean is built from $n=100$ observations using the $1.96$ critical value. How wide is the interval?
+  answer: "3.92"
+  answer_type: numeric
+  solution_md: |
+    The standard error is $10/\sqrt{100}=1$, so the width is $2\cdot 1.96\cdot 1 = 3.92$.
+  source: curated
+  status: fresh
+  reference:
+    exact:
+      expr: 2*Rational(196, 100)*10/sqrt(100)
+
+- id: stat-007
+  topic: statistics
+  node_id: stat.estimation
+  difficulty: 1
+  format: mental_math
+  prompt_md: |
+    Five measurements come out as $1, 3, 5, 7, 9$. What is their sample variance, computed with a
+    divisor of $n-1$? Give your answer as an integer.
+  answer: "10"
+  answer_type: numeric
+  solution_md: |
+    The mean is $5$, and the squared deviations are $16, 4, 0, 4, 16$, which add up to $40$.
+    Dividing by $n-1=4$ gives $10$.
+  source: curated
+  status: fresh
+  reference:
+    exact:
+      expr: (1**2 + 3**2 + 5**2 + 7**2 + 9**2 - 5*5**2)/(5 - 1)
+
+- id: stat-008
+  topic: statistics
+  node_id: stat.estimation
+  difficulty: 2
+  format: derivation
+  prompt_md: |
+    Four independent waiting times, in minutes, are modelled as exponential with unknown rate
+    $\lambda$ per minute. They are observed as $0.5, 1.5, 2$ and $4$. What is the maximum
+    likelihood estimate of $\lambda$? Give your answer as a fraction in lowest terms.
+  answer: "1/2"
+  answer_type: numeric
+  solution_md: |
+    With $n=4$ observations summing to $8$, the log-likelihood is $4\ln\lambda-8\lambda$. Setting its
+    derivative $4/\lambda-8$ to zero gives $\hat\lambda=4/8=1/2$, the reciprocal of the sample mean.
+  source: curated
+  status: fresh
+  reference:
+    exact:
+      expr: solve(diff(4*log(lam) - (Rational(1, 2) + Rational(3, 2) + 2 + 4)*lam, lam), lam)[0]
+      symbols:
+        lam: positive
+
+- id: stat-009
+  topic: statistics
+  node_id: stat.estimation
+  difficulty: 2
+  format: mental_math
+  prompt_md: |
+    Let $X_1,\dots,X_5$ be independent and identically distributed, with common mean $\mu$ and
+    common variance $\sigma^2=10$, so $n=5$. The variance is estimated by
+    $\frac15\sum_{i=1}^{5}(X_i-\bar X)^2$, with divisor $n=5$ rather than $4$. Define the bias of
+    an estimator as $E[\text{estimator}]-\sigma^2$ (its expected value minus the true variance).
+    What is the bias of this estimator? Give your answer as an integer.
+  answer: "-2"
+  answer_type: numeric
+  solution_md: |
+    The sum of squared deviations has expected value $(n-1)\sigma^2=4\cdot10=40$, so the estimator
+    has expected value $40/5=8$. The bias is $8-10=-2$.
+  source: curated
+  status: fresh
+  reference:
+    exact:
+      expr: 4*10/5 - 10
+
+- id: stat-010
+  topic: statistics
+  node_id: stat.estimation
+  difficulty: 3
+  format: derivation
+  prompt_md: |
+    The standard deviation of a measurement is known to be $5$. How many independent observations
+    are needed so that a two-sided $95\%$ confidence interval for the mean, built with the critical
+    value $z=1.96$ (half-width $z\sigma/\sqrt n$), has half-width at most $0.5$? Give your answer as
+    the smallest whole number that works.
+  answer: "385"
+  answer_type: numeric
+  solution_md: |
+    The half-width is $1.96\cdot 5/\sqrt n\le 0.5$, so $\sqrt n\ge 19.6$ and $n\ge 384.16$. Because
+    $n$ must be a whole number, the smallest value that works is $385$.
+  source: curated
+  status: fresh
+  reference:
+    exact:
+      expr: ceiling((Rational(196, 100)*5/Rational(1, 2))**2)
+
+- id: stat-011
+  topic: statistics
+  node_id: stat.estimation
+  difficulty: 3
+  format: derivation
+  prompt_md: |
+    A coin lands heads with unknown probability $p$, and your prior density for $p$ on $[0,1]$ is
+    proportional to $p(1-p)^2$. You flip it $10$ times and see $7$ heads. What is the posterior mean
+    of $p$? Give your answer as a fraction in lowest terms.
+  answer: "3/5"
+  answer_type: numeric
+  solution_md: |
+    The posterior density is proportional to prior times likelihood, which is
+    $p(1-p)^2\cdot p^7(1-p)^3=p^8(1-p)^5$. That is a Beta$(9,6)$ density, whose mean is
+    $\frac{9}{9+6}=\frac35$.
+  source: curated
+  status: fresh
+  reference:
+    exact:
+      expr: Integral(p**9*(1 - p)**5, (p, 0, 1)) / Integral(p**8*(1 - p)**5, (p, 0, 1))
+
+- id: stat-012
+  topic: statistics
+  node_id: stat.estimation
+  difficulty: 4
+  format: derivation
+  prompt_md: |
+    Let $X_1,\dots,X_n$ be independent with density $f(x)=\lambda e^{-\lambda x}$ for $x>0$. What is
+    the Cramér-Rao lower bound on the variance of any unbiased estimator of $\lambda$ (the bound
+    applies to unbiased estimators only)? Give your answer as a single expression in $n$ and
+    $\lambda$ (type $\lambda$ as `lam`).
+  answer: "lam**2/n"
+  answer_type: symbolic
+  solution_md: |
+    The log-density is $\ln\lambda-\lambda x$, with second derivative $-1/\lambda^2$ in $\lambda$. So
+    the Fisher information in one observation is $1/\lambda^2$, and in $n$ observations it is
+    $n/\lambda^2$. The bound is the reciprocal, $\lambda^2/n$.
+  source: curated
+  status: fresh
+  reference:
+    exact:
+      expr: >-
+        1/(n*(-Integral(diff(log(lam*exp(-lam*x)), lam, 2)*lam*exp(-lam*x), (x, 0, oo))))
+      symbols:
+        x: positive
+        lam: positive

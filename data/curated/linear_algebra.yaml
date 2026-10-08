@@ -1,0 +1,383 @@
+# Curated linear algebra questions. All wording is original.
+# Each entry may carry a `reference:` block: the independent evidence used to verify it
+# (exact expression, named simulator, pricing inputs or code tests). Adding a question is a
+# single-file edit. Changing a reference sends the question back to `fresh` until re-verified.
+- id: linalg-001
+  topic: linear_algebra
+  node_id: la.determinants
+  difficulty: 1
+  format: mental_math
+  prompt_md: |
+    Compute $\det\begin{pmatrix}2&1\\5&3\end{pmatrix}$.
+  answer: "1"
+  answer_type: numeric
+  solution_md: |
+    $2\cdot 3 - 1\cdot 5 = 1$.
+  source: curated
+  status: fresh
+  reference:
+    exact:
+      expr: det(Matrix([[2, 1], [5, 3]]))
+
+- id: linalg-002
+  topic: linear_algebra
+  node_id: la.eigen
+  difficulty: 2
+  format: derivation
+  prompt_md: |
+    What is the largest eigenvalue of $A=\begin{pmatrix}4&1\\2&3\end{pmatrix}$?
+  answer: "5"
+  answer_type: numeric
+  solution_md: |
+    The characteristic polynomial is $\lambda^2 - 7\lambda + 10 = (\lambda-5)(\lambda-2)$,
+    so the eigenvalues are $5$ and $2$.
+  source: curated
+  status: fresh
+  reference:
+    exact:
+      expr: max_eigenvalue(Matrix([[4, 1], [2, 3]]))
+
+- id: linalg-003
+  topic: linear_algebra
+  node_id: la.determinants
+  difficulty: 2
+  format: derivation
+  prompt_md: |
+    Find the rank of $\begin{pmatrix}1&2&3\\2&4&6\\1&0&1\end{pmatrix}$.
+  answer: "2"
+  answer_type: numeric
+  solution_md: |
+    Row $2$ is twice row $1$, so at most two rows are independent. Rows $1$ and $3$ are not
+    proportional, so the rank is $2$.
+  source: curated
+  status: fresh
+  reference:
+    exact:
+      expr: rank(Matrix([[1, 2, 3], [2, 4, 6], [1, 0, 1]]))
+
+- id: linalg-004
+  topic: linear_algebra
+  node_id: la.eigen
+  difficulty: 3
+  format: mental_math
+  prompt_md: |
+    Let $A=\begin{pmatrix}1&2\\0&3\end{pmatrix}$. What is $\operatorname{tr}(A^2)$?
+  answer: "10"
+  answer_type: numeric
+  solution_md: |
+    $A$ is triangular with eigenvalues $1$ and $3$, so $A^2$ has eigenvalues $1$ and $9$,
+    and the trace is $10$.
+  source: curated
+  status: fresh
+  reference:
+    exact:
+      expr: trace(Matrix([[1, 2], [0, 3]])**2)
+
+- id: linalg-005
+  topic: linear_algebra
+  node_id: la.determinants
+  difficulty: 3
+  format: derivation
+  prompt_md: |
+    For $A=\begin{pmatrix}a&b\\c&d\end{pmatrix}$, express $\det(A^2)$ in terms of $a,b,c,d$.
+  answer: "(a*d - b*c)**2"
+  answer_type: symbolic
+  solution_md: |
+    $\det(A^2)=\det(A)^2=(ad-bc)^2$ by multiplicativity of the determinant.
+  source: curated
+  status: fresh
+  reference:
+    exact:
+      expr: det(Matrix([[a, b], [c, d]])**2)
+
+- id: linalg-006
+  topic: linear_algebra
+  node_id: la.projections
+  difficulty: 4
+  format: derivation
+  prompt_md: |
+    Project the vector $v=(2,2)$ orthogonally onto the line spanned by $u=(1,2)$.
+    What is the squared length of the projection?
+  answer: "36/5"
+  answer_type: numeric
+  solution_md: |
+    $\operatorname{proj}_u v = \frac{v\cdot u}{u\cdot u}u = \frac{6}{5}(1,2)$, so its squared
+    length is $\frac{36}{25}\cdot 5 = \frac{36}{5}$.
+  source: curated
+  status: fresh
+  reference:
+    exact:
+      expr: (2*2 + 2*2) - (2*2 - 2*1)**2/(1*1 + 2*2)
+
+- id: linalg-007
+  topic: linear_algebra
+  node_id: la.eigen
+  difficulty: 1
+  format: mental_math
+  prompt_md: |
+    Look at $A=\begin{pmatrix}6&1&4\\0&2&9\\0&0&5\end{pmatrix}$. What is its largest eigenvalue?
+    Give your answer as an integer.
+  answer: "6"
+  answer_type: numeric
+  solution_md: |
+    $A$ is upper triangular, so its eigenvalues are its diagonal entries $6$, $2$ and $5$.
+    The largest is $6$.
+  source: curated
+  status: fresh
+  reference:
+    exact:
+      expr: max_eigenvalue(Matrix([[6, 1, 4], [0, 2, 9], [0, 0, 5]]))
+
+- id: linalg-008
+  topic: linear_algebra
+  node_id: la.eigen
+  difficulty: 3
+  format: derivation
+  prompt_md: |
+    Let $u=(2,1,3)^T$ and $v=(1,2,1)^T$ be column vectors, and let $M=I+uv^T$, where $uv^T$ is
+    their outer product (a $3\times3$ matrix) and $I$ is the $3\times3$ identity matrix. The
+    eigenvalue $1$ of $M$ appears twice. What is the third eigenvalue? Give your answer
+    as an integer.
+  answer: "8"
+  answer_type: numeric
+  solution_md: |
+    The matrix $uv^T$ has rank one, so it has eigenvalue $0$ twice, and $(uv^T)u=u\,(v^Tu)$ shows
+    that its third eigenvalue is $v^Tu=2+2+3=7$. Adding $I$ shifts every eigenvalue by $1$, giving
+    $1,1,8$. The third eigenvalue is $8$.
+  source: curated
+  status: fresh
+  reference:
+    exact:
+      expr: >-
+        max_eigenvalue(Matrix([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+        + Matrix([[2], [1], [3]])*Matrix([[1, 2, 1]]))
+
+- id: linalg-009
+  topic: linear_algebra
+  node_id: la.eigen
+  difficulty: 2
+  format: derivation
+  prompt_md: |
+    Let $A=\begin{pmatrix}1&2\\3&4\end{pmatrix}$ and let $I$ be the $2\times2$ identity matrix.
+    Compute $p(t)=\det(A-tI)$, that is, $A$ minus $t$ times $I$ (not $tI-A$). Give your
+    answer as a single expression in $t$.
+  answer: "t**2 - 5*t - 2"
+  answer_type: symbolic
+  solution_md: |
+    $$
+    \det\begin{pmatrix}1-t&2\\3&4-t\end{pmatrix}=(1-t)(4-t)-6=t^2-5t-2.
+    $$
+  source: curated
+  status: fresh
+  reference:
+    exact:
+      expr: det(Matrix([[1, 2], [3, 4]]) - t*Matrix([[1, 0], [0, 1]]))
+
+- id: linalg-010
+  topic: linear_algebra
+  node_id: la.eigen
+  difficulty: 3
+  format: derivation
+  prompt_md: |
+    Let $A=\begin{pmatrix}1&2\\3&0\end{pmatrix}$, let $I$ be the $2\times2$ identity matrix, and let
+    $B=A^2-2A+I$, where $A^2$ means the matrix product $A\cdot A$. What is the largest eigenvalue
+    of $B$? Give your answer as an integer.
+  answer: "9"
+  answer_type: numeric
+  solution_md: |
+    The eigenvalues of $A$ solve $\lambda^2-\lambda-6=0$, so they are $3$ and $-2$. A polynomial in
+    $A$ has the same polynomial applied to each eigenvalue, and $B=(A-I)^2$, so the eigenvalues of
+    $B$ are $(3-1)^2=4$ and $(-2-1)^2=9$. The largest is $9$.
+  source: curated
+  status: fresh
+  reference:
+    exact:
+      expr: >-
+        max_eigenvalue(Matrix([[1, 2], [3, 0]])**2 - 2*Matrix([[1, 2], [3, 0]])
+        + Matrix([[1, 0], [0, 1]]))
+
+- id: linalg-011
+  topic: linear_algebra
+  node_id: la.eigen
+  difficulty: 2
+  format: derivation
+  prompt_md: |
+    Take $A=\begin{pmatrix}2&0&1\\1&1&1\\2&0&3\end{pmatrix}$. One of its right eigenvectors,
+    meaning $Av=\lambda v$, is $v=(1,1,2)^T$. Find the eigenvalue $\lambda$ that belongs to $v$. Give your answer as an integer.
+  answer: "4"
+  answer_type: numeric
+  solution_md: |
+    Multiply $A$ by $v$ one row at a time: the entries of $Av$ are $2+0+2=4$, $1+1+2=4$ and
+    $2+0+6=8$. So $Av=(4,4,8)^T=4v$, and the eigenvalue is $4$.
+  source: curated
+  status: fresh
+  reference:
+    exact:
+      expr: >-
+        trace(Matrix([[2, 0, 1], [1, 1, 1], [2, 0, 3]]) * Matrix([[1, 0, 0], [1, 0, 0], [2, 0, 0]]))
+
+- id: linalg-012
+  topic: linear_algebra
+  node_id: la.eigen
+  difficulty: 4
+  format: derivation
+  prompt_md: |
+    A two-state Markov chain with $0<a<1$ and $0<b<1$ has transition matrix
+    $P=\begin{pmatrix}1-a&a\\b&1-b\end{pmatrix}$. Because every row of $P$ sums to $1$, the
+    eigenvalue $1$ is already known. Find the other eigenvalue. Give your answer
+    as a single expression in $a$ and $b$.
+  answer: "1 - a - b"
+  answer_type: symbolic
+  solution_md: |
+    The eigenvalues multiply to the determinant. Here
+    $$
+    \det P=(1-a)(1-b)-ab=1-a-b.
+    $$
+    One eigenvalue is $1$, so the other is $1-a-b$.
+  source: curated
+  status: fresh
+  reference:
+    exact:
+      expr: det(Matrix([[1 - a, a], [b, 1 - b]]))
+
+- id: linalg-013
+  topic: linear_algebra
+  node_id: la.projections
+  difficulty: 1
+  format: mental_math
+  prompt_md: |
+    The vector $v=(6,k)^T$ is projected orthogonally onto the line spanned by $u=(2,-1)^T$, and the
+    projection turns out to be the zero vector. What is $k$? Give your answer as an integer.
+  answer: "12"
+  answer_type: numeric
+  solution_md: |
+    The projection onto the line is $\dfrac{v\cdot u}{u\cdot u}\,u$, which is zero exactly when
+    $v\cdot u=0$. So $6\cdot2+k\cdot(-1)=0$, giving $k=12$.
+  source: curated
+  status: fresh
+  reference:
+    exact:
+      expr: solve(6*2 + k*(-1), k)[0]
+
+- id: linalg-015
+  topic: linear_algebra
+  node_id: la.projections
+  difficulty: 3
+  format: derivation
+  prompt_md: |
+    In $\mathbb{R}^3$, let $\Pi$ be the plane spanned by $a_1=(1,1,0)^T$ and $a_2=(1,-1,1)^T$. What
+    is the first coordinate of the orthogonal projection of $b=(2,4,3)^T$ onto $\Pi$? Give your
+    answer as a fraction in lowest terms.
+  answer: "10/3"
+  answer_type: numeric
+  solution_md: |
+    Since $a_1\cdot a_2=0$, the projection is the sum of the projections onto each vector:
+    $$
+    \frac{b\cdot a_1}{a_1\cdot a_1}a_1+\frac{b\cdot a_2}{a_2\cdot a_2}a_2
+    =\frac{6}{2}(1,1,0)+\frac13(1,-1,1)=\left(\tfrac{10}{3},\tfrac83,\tfrac13\right).
+    $$
+    The first coordinate is $10/3$.
+  source: curated
+  status: fresh
+  reference:
+    exact:
+      expr: >-
+        det(Matrix([[1, 0, 0]])*Matrix([[1, 1], [1, -1], [0, 1]])
+        *(Matrix([[1, 1, 0], [1, -1, 1]])*Matrix([[1, 1], [1, -1], [0, 1]]))**(-1)
+        *Matrix([[1, 1, 0], [1, -1, 1]])*Matrix([[2], [4], [3]]))
+
+- id: linalg-016
+  topic: linear_algebra
+  node_id: la.projections
+  difficulty: 2
+  format: mental_math
+  prompt_md: |
+    What is the distance from the point $(4,2,-1)$ to the plane $2x+y-2z=0$? Give your answer as an
+    integer.
+  answer: "4"
+  answer_type: numeric
+  solution_md: |
+    The plane has normal $n=(2,1,-2)$ with $|n|=3$. The distance is the length of the projection of
+    the point onto $n$: $|2\cdot4+2-2\cdot(-1)|/3=12/3=4$.
+  source: curated
+  status: fresh
+  reference:
+    exact:
+      expr: Abs(solve(2*(4 - 2*t) + (2 - t) - 2*(-1 + 2*t), t)[0])*sqrt(2**2 + 1**2 + 2**2)
+
+- id: linalg-017
+  topic: linear_algebra
+  node_id: la.projections
+  difficulty: 3
+  format: derivation
+  prompt_md: |
+    A least-squares line $y=a+bx$, with an intercept $a$, is fitted to the four points
+    $(0,1),(1,3),(2,4),(3,8)$. What is the intercept $a$? Give your answer as a fraction in lowest
+    terms.
+  answer: "7/10"
+  answer_type: numeric
+  solution_md: |
+    With $n=4$, $\sum x=6$, $\sum y=16$, $\sum xy=35$ and $\sum x^2=14$, the slope is
+    $b=\dfrac{4\cdot35-6\cdot16}{4\cdot14-6^2}=\dfrac{44}{20}=\dfrac{11}{5}$. The line passes
+    through $(\bar x,\bar y)=(1.5,4)$, so $a=4-\tfrac{11}{5}\cdot1.5=\tfrac{7}{10}$.
+  source: curated
+  status: fresh
+  reference:
+    exact:
+      expr: >-
+        det(Matrix([[1, 0]])*(Matrix([[1, 1, 1, 1], [0, 1, 2, 3]])
+        *Matrix([[1, 0], [1, 1], [1, 2], [1, 3]]))**(-1)*Matrix([[1, 1, 1, 1], [0, 1, 2, 3]])
+        *Matrix([[1], [3], [4], [8]]))
+
+- id: linalg-018
+  topic: linear_algebra
+  node_id: la.projections
+  difficulty: 2
+  format: derivation
+  prompt_md: |
+    Let $P$ be the matrix of the orthogonal projection onto the column space of
+    $A=\begin{pmatrix}1&0\\1&1\\1&2\\1&3\end{pmatrix}$, whose two columns are linearly independent.
+    What is the trace of $P$? Give your answer as an integer.
+  answer: "2"
+  answer_type: numeric
+  solution_md: |
+    A projection matrix has eigenvalue $1$ on the subspace it projects onto and $0$ elsewhere, so its
+    trace is the dimension of that subspace. The two columns of $A$ are independent, so the column
+    space has dimension $2$ and $\operatorname{tr}P=2$.
+  source: curated
+  status: fresh
+  reference:
+    exact:
+      expr: >-
+        trace(Matrix([[1, 0], [1, 1], [1, 2], [1, 3]])*(Matrix([[1, 1, 1, 1], [0, 1, 2, 3]])
+        *Matrix([[1, 0], [1, 1], [1, 2], [1, 3]]))**(-1)*Matrix([[1, 1, 1, 1], [0, 1, 2, 3]]))
+
+- id: linalg-019
+  topic: linear_algebra
+  node_id: la.projections
+  difficulty: 4
+  format: derivation
+  prompt_md: |
+    Reflect $b=(3,0,1)^T$ across the plane spanned by $(1,0,1)^T$ and $(0,1,1)^T$. This plane
+    passes through the origin. The reflection is $2p-b$, where $p$ is the orthogonal projection of
+    $b$ onto the plane. What is the third coordinate of the reflected vector? Give your answer as a
+    fraction in lowest terms.
+  answer: "7/3"
+  answer_type: numeric
+  solution_md: |
+    The plane has normal $n=(1,1,-1)^T$, since $n$ is perpendicular to both spanning vectors. The
+    component of $b$ along $n$ is $\dfrac{b\cdot n}{n\cdot n}n=\dfrac23 n$, and reflecting removes it
+    twice:
+    $$
+    2p-b=b-2\cdot\tfrac23 n=\left(\tfrac53,-\tfrac43,\tfrac73\right).
+    $$
+    The third coordinate is $7/3$.
+  source: curated
+  status: fresh
+  reference:
+    exact:
+      expr: >-
+        det(Matrix([[0, 0, 1]])*(2*Matrix([[1, 0], [0, 1], [1, 1]])
+        *(Matrix([[1, 0, 1], [0, 1, 1]])*Matrix([[1, 0], [0, 1], [1, 1]]))**(-1)
+        *Matrix([[1, 0, 1], [0, 1, 1]]) - Matrix([[1, 0, 0], [0, 1, 0], [0, 0, 1]]))
+        *Matrix([[3], [0], [1]]))
