@@ -105,6 +105,17 @@ def test_a_prompt_without_an_answer_format_is_an_error(tmp_path: Path) -> None:
     assert any("answer format" in m for m in errors(rep))
 
 
+def test_a_line_wrap_inside_a_required_phrase_is_fine(tmp_path: Path) -> None:
+    sym = entry(
+        answer_type="symbolic",
+        answer="2/n",
+        prompt_md="Find the variance as a single\nexpression in $n$. Give the exact\nform.",
+        reference={"exact": {"expr": "2/n"}},
+    )
+    (rep,) = run(tmp_path, sym)
+    assert errors(rep) == []
+
+
 def test_display_math_must_have_dollars_on_their_own_lines(tmp_path: Path) -> None:
     """Streamlit shows `$$...$$` that shares a line with its formula as a red KaTeX error."""
     good = "Hence\n$$\nx = 1\n$$\nas claimed."

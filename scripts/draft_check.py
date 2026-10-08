@@ -126,7 +126,8 @@ def _lint(
         err("source must be 'curated'")
     if q.difficulty not in SEEDING_DIFFICULTIES:
         err("difficulty must be 1 to 4 for seeding")
-    if not format_is_stated(q.prompt_md):
+    prompt = " ".join(q.prompt_md.split())  # YAML line wraps must not matter
+    if not format_is_stated(prompt):
         err(
             "the prompt does not state the answer format "
             "(fraction, decimal precision or exact expression)"
@@ -134,7 +135,7 @@ def _lint(
     if q.answer_type is AnswerType.SYMBOLIC:
         if "," in q.answer.replace(" ", "") and not re.search(r"\(.*,.*\)", q.answer):
             err("a symbolic answer must be a single expression, not several values")
-        if "single expression" not in q.prompt_md.lower() or _SET_WORDS.search(q.prompt_md):
+        if "single expression" not in prompt.lower() or _SET_WORDS.search(prompt):
             err(
                 "a symbolic prompt must ask for a single expression "
                 "(not 'values' or 'all solutions')"

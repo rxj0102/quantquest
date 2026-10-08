@@ -17,10 +17,13 @@ def linalg_007() -> float:
 
 
 def linalg_008() -> float:
-    """Symmetric matrix: use the symmetric eigensolver and take the smaller eigenvalue."""
-    vals = np.linalg.eigvalsh(np.array([[1, 3], [3, 1]], dtype=float))
-    assert abs(vals[1] - 4.0) < 1e-12  # the stated eigenvalue 4 is really there
-    return float(vals[0])
+    """Eigendecompose M = I + u v^T numerically; drop the two eigenvalues equal to 1."""
+    u, v = np.array([2.0, 1.0, 3.0]), np.array([1.0, 2.0, 1.0])
+    vals = np.linalg.eigvals(np.eye(3) + np.outer(u, v)).real
+    ones = [x for x in vals if abs(x - 1) < 1e-6]
+    assert len(ones) == 2, "the eigenvalue 1 should appear exactly twice"
+    (third,) = [x for x in vals if abs(x - 1) >= 1e-6]
+    return float(third)
 
 
 def linalg_009() -> sp.Expr:
@@ -36,12 +39,18 @@ def linalg_010() -> float:
 
 
 def linalg_011() -> float:
-    """Divide A v by v componentwise; equal ratios also prove that v is an eigenvector."""
+    """Eigendecompose A and return the eigenvalue whose eigenvector is parallel to v.
+
+    Deliberately not the A v computation used by the solution and the reference.
+    """
     a = np.array([[2, 0, 1], [1, 1, 1], [2, 0, 3]], dtype=float)
     v = np.array([1, 1, 2], dtype=float)
-    ratios = (a @ v) / v
-    assert np.allclose(ratios, ratios[0]), "v is not an eigenvector"
-    return float(ratios[0])
+    vals, vecs = np.linalg.eig(a)
+    cos = np.abs(vecs.T @ v) / (np.linalg.norm(vecs, axis=0) * np.linalg.norm(v))
+    best = int(np.argmax(cos))
+    assert cos[best] > 1 - 1e-9, "no eigenvector is parallel to v"
+    assert sum(abs(vals - vals[best]) < 1e-6) == 1, "eigenvalue is repeated: ambiguous"
+    return float(vals[best].real)
 
 
 def linalg_012() -> sp.Expr:
