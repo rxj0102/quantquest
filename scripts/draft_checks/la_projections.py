@@ -13,9 +13,9 @@ from scipy.linalg import null_space
 
 
 def linalg_013() -> float:
-    u = np.array([[2.0], [1.0]])
-    v = np.array([7.0, 1.0])
-    return float(np.linalg.lstsq(u, v, rcond=None)[0][0])
+    """The projection is zero iff v is orthogonal to u: v must lie in u's null-space complement."""
+    (direction,) = null_space(np.array([[2.0, -1.0]])).T  # unit vector perpendicular to u
+    return float(6.0 * direction[1] / direction[0])  # scale so the first entry is 6
 
 
 def linalg_014() -> sp.Expr:
