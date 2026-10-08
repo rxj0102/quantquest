@@ -9,10 +9,16 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from scripts.draft_checks import la_eigen, prob_conditional, stat_estimation  # noqa: E402
+from scripts.draft_checks import (  # noqa: E402
+    la_eigen,
+    la_projections,
+    prob_conditional,
+    stat_estimation,
+)
 
 THIRD_CHECKS: dict[str, Callable[[], object]] = {
     **prob_conditional.CHECKS,
     **la_eigen.CHECKS,
     **stat_estimation.CHECKS,
+    **la_projections.CHECKS,
 }

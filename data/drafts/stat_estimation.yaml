@@ -47,9 +47,10 @@
   difficulty: 2
   format: mental_math
   prompt_md: |
-    Five independent observations each have variance $10$. The variance is estimated by
-    $\frac15\sum_{i=1}^{5}(X_i-\bar X)^2$, with divisor $5$ rather than $4$. What is the bias of this
-    estimator, meaning its expected value minus the true variance? Give your answer as an integer.
+    Take $n=5$ independent observations, each with true variance $\sigma^2=10$. The variance is
+    estimated by $\frac15\sum_{i=1}^{5}(X_i-\bar X)^2$, with divisor $n=5$ rather than $4$. Define
+    the bias of an estimator as $E[\text{estimator}]-\sigma^2$ (its expected value minus the true
+    variance). What is the bias of this estimator? Give your answer as an integer.
   answer: "-2"
   answer_type: numeric
   solution_md: |
@@ -68,9 +69,9 @@
   format: derivation
   prompt_md: |
     The standard deviation of a measurement is known to be $5$. How many independent observations
-    are needed so that a two-sided $95\%$ confidence interval for the mean, using the $1.96$
-    critical value, has half-width at most $0.5$? Give your answer as the smallest whole number that
-    works.
+    are needed so that a two-sided $95\%$ confidence interval for the mean, built with the critical
+    value $z=1.96$ (half-width $z\sigma/\sqrt n$), has half-width at most $0.5$? Give your answer as
+    the smallest whole number that works.
   answer: "385"
   answer_type: numeric
   solution_md: |
@@ -110,8 +111,9 @@
   format: derivation
   prompt_md: |
     Let $X_1,\dots,X_n$ be independent with density $f(x)=\lambda e^{-\lambda x}$ for $x>0$. What is
-    the Cramér-Rao lower bound on the variance of an unbiased estimator of $\lambda$? Give your
-    answer as a single expression in $n$ and $\lambda$ (type $\lambda$ as `lam`).
+    the Cramér-Rao lower bound on the variance of any unbiased estimator of $\lambda$ (the bound
+    applies to unbiased estimators only)? Give your answer as a single expression in $n$ and
+    $\lambda$ (type $\lambda$ as `lam`).
   answer: "lam**2/n"
   answer_type: symbolic
   solution_md: |
