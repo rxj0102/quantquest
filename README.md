@@ -50,5 +50,29 @@ YAML entry. That tolerance is for typing only: verification and promotion always
 
 ### Adding a question
 Add one entry to a file in `data/curated/` (including its `reference:` block, the independent
-evidence used to verify it) and restart the app, or run `python -m verify.promote`. Changing a
-question's prompt, answer or reference sends it back to `fresh` until it is re-verified.
+evidence used to verify it) and restart the app, or run `python -m verify.promote`. The YAML
+reference is the only source of references. Changing a question's prompt, answer or reference
+sends it back to `fresh` until it is re-verified. A text-answer question can never be `trusted`.
+When you add or remove a curated question on purpose, update the expected ids in
+`tests/test_curated_ids.py` (and the expected symbolic ids in `tests/verify/test_sympy_check.py`
+if it is symbolic) in the same commit, so an accidental deletion fails a test.
+
+## Seeding new questions
+```
+python -m scripts.draft_check data/drafts/<file>.yaml     # review sheet for a batch of drafts
+python -m core.skill_tree --db quantquest.db               # trusted questions per node
+```
+- Drafts live in `data/drafts/` and are never loaded by the app. Each draft carries its
+  `reference:`; `draft_check` runs the real verifier, an independent third check
+  (`scripts/draft_checks/`), the prompt-similarity check (`core/similarity.py`) and the draft rules
+  (answer format stated, symbolic answers ask for a single expression, display math that renders,
+  difficulty 1 to 4, no near-duplicates).
+- A draft moves to `data/curated/` only after the owner's review. Its third check then stays as the
+  question's answer-check fixture (`scripts/check_answers.py`).
+- Plans for the next work are in `docs/plans/` (finance nodes for batch 2, and an explicit
+  unverified-practice status for questions that cannot be auto-verified).
+
+## Mutation testing
+`scripts/mutation/` holds the harness used on the trust-boundary code. See its README for how to
+run it, what the verdicts mean, and the latest results. Run it on its own: it edits source files
+temporarily.

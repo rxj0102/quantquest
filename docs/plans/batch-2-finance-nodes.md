@@ -1,7 +1,9 @@
 # Plan: seeding batch 2 (finance nodes)
 
 Status: **approved, not started.** Written 2026-10-08. Nothing in this plan has been built.
-Batch 1 (`data/drafts/`) is waiting on the owner's review and is independent of this plan.
+Batch 1 is independent of this plan and partly reviewed: prob.conditional (except prob-012) and
+la.eigen are in `data/curated/` and promoted; stat.estimation, la.projections and prob-012 are
+still drafts under review.
 
 Scope: only **verifiable numeric and symbolic** questions. Text, rubric and behavioral questions
 are deferred out of batch 2 entirely; they come back with the unverified-practice status
