@@ -78,6 +78,29 @@ def _answer_key(answer: str) -> str:
         return answer.strip()
 
 
+MAX_DISPLAY_LINE = 90
+
+
+def _display_math_ok(text: str) -> bool:
+    """True if every ``$$`` sits alone on its line and the fences pair up.
+
+    Streamlit's markdown renders a ``$$...$$`` that shares a line with its formula (or spans
+    lines with indentation) as a raw red KaTeX error, so the fences must be on their own lines.
+    A formula line longer than ``MAX_DISPLAY_LINE`` characters is clipped, so split it with
+    ``aligned``.
+    """
+    inside, fences = False, 0
+    for line in text.splitlines():
+        if "$$" in line:
+            if line.strip() != "$$":
+                return False
+            fences += 1
+            inside = not inside
+        elif inside and len(line.strip()) > MAX_DISPLAY_LINE:
+            return False  # too wide: the right-hand side is clipped in the app
+    return fences % 2 == 0
+
+
 def _lint(
     entry: CuratedEntry, *, curated_ids: set[str], tree: SkillTree, verification: Verification
 ) -> list[Issue]:
@@ -91,6 +114,12 @@ def _lint(
         err(f"id {q.id} is already used by the curated pool")
     if q.node_id not in tree.nodes:
         err(f"node_id {q.node_id!r} is not a skill-tree node")
+    for column, text in (("prompt_md", q.prompt_md), ("solution_md", q.solution_md)):
+        if not _display_math_ok(text):
+            err(
+                f"{column}: display math needs $$ alone on its line and formula lines "
+                f"under {MAX_DISPLAY_LINE} characters"
+            )
     if q.status is not Status.FRESH:
         err(f"status must be fresh in a draft, got {q.status.value}")
     if q.source != "curated":

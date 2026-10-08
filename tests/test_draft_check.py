@@ -105,6 +105,21 @@ def test_a_prompt_without_an_answer_format_is_an_error(tmp_path: Path) -> None:
     assert any("answer format" in m for m in errors(rep))
 
 
+def test_display_math_must_have_dollars_on_their_own_lines(tmp_path: Path) -> None:
+    """Streamlit shows `$$...$$` that shares a line with its formula as a red KaTeX error."""
+    good = "Hence\n$$\nx = 1\n$$\nas claimed."
+    (ok,) = run(tmp_path, entry(solution_md=good))
+    assert errors(ok) == []
+    for bad in ("Hence $$x = 1$$ as claimed.", "Hence\n$$x = 1\n$$", "Hence\n$$\nx = 1"):
+        (rep,) = run(tmp_path, entry(solution_md=bad))
+        assert any("display math" in m for m in errors(rep)), bad
+    wide = "Hence\n$$\n" + "x + " * 40 + "1\n$$"
+    (rep,) = run(tmp_path, entry(solution_md=wide))
+    assert any("display math" in m for m in errors(rep))
+    (rep,) = run(tmp_path, entry(prompt_md=entry()["prompt_md"] + " $$1$$"))
+    assert any("display math" in m for m in errors(rep))
+
+
 def test_a_symbolic_answer_must_be_a_single_expression(tmp_path: Path) -> None:
     sym = entry(
         answer_type="symbolic",
