@@ -1,5 +1,8 @@
 # Curated probability questions. All wording is original.
 # status stays "fresh" until M2 verifiers exist (CLAUDE.md rule 3).
+# Each entry may carry a `reference:` block: the independent evidence used to verify it
+# (exact expression, named simulator, pricing inputs or code tests). Adding a question is a
+# single-file edit. Changing a reference sends the question back to `fresh` until re-verified.
 - id: prob-001
   topic: probability
   node_id: prob.counting
@@ -14,6 +17,18 @@
     That is $4/36 = 1/9$.
   source: curated
   status: fresh
+  reference:
+    exact:
+      expr: Sum(Sum(KroneckerDelta(a + b, 9), (a, 1, 6)), (b, 1, 6))/36
+      symbols:
+        a: integer
+        b: integer
+    simulator:
+      name: dice_sum_equals
+      params:
+        n_dice: 2
+        sides: 6
+        target: 9
 
 - id: prob-002
   topic: probability
@@ -29,6 +44,17 @@
     $P = \frac{5}{8}\cdot\frac{4}{7} = \frac{20}{56} = \frac{5}{14}$.
   source: curated
   status: fresh
+  reference:
+    exact:
+      expr: binomial(5, 2)/binomial(8, 2)
+    simulator:
+      name: draw_all_of_color
+      params:
+        counts:
+          red: 5
+          blue: 3
+        k: 2
+        color: red
 
 - id: prob-003
   topic: probability
@@ -44,6 +70,11 @@
     The number of rolls is geometric with success probability $p = 1/6$, so the mean is $1/p = 6$.
   source: curated
   status: fresh
+  reference:
+    exact:
+      expr: Sum(Rational(5, 6)**(k - 1), (k, 1, oo))
+      symbols:
+        k: integer
 
 - id: prob-004
   topic: probability
@@ -59,6 +90,16 @@
     $P(\ge 2) = 1 - 5/16 = 11/16$.
   source: curated
   status: fresh
+  reference:
+    exact:
+      expr: Sum(binomial(4, j), (j, 2, 4))/2**4
+      symbols:
+        j: integer
+    simulator:
+      name: coin_heads_at_least
+      params:
+        n: 4
+        k: 2
 
 - id: prob-005
   topic: probability
@@ -75,6 +116,13 @@
     $4!\,(1 - 1 + \tfrac12 - \tfrac16 + \tfrac1{24}) = 9$. The probability is $9/24 = 3/8$.
   source: curated
   status: fresh
+  reference:
+    exact:
+      expr: subfactorial(4)/factorial(4)
+    simulator:
+      name: derangement
+      params:
+        n: 4
 
 - id: prob-006
   topic: probability
@@ -92,6 +140,15 @@
     $P = \frac{0.95\cdot 0.01}{0.95\cdot 0.01 + 0.10\cdot 0.99} = \frac{0.0095}{0.1085} = \frac{19}{217}\approx 0.0876$.
   source: curated
   status: fresh
+  reference:
+    exact:
+      expr: (100*Rational(95, 100))/(100*Rational(95, 100) + 9900*Rational(10, 100))
+    simulator:
+      name: screening_posterior
+      params:
+        prevalence: 0.01
+        sensitivity: 0.95
+        false_positive: 0.1
 
 - id: prob-007
   topic: probability
@@ -107,6 +164,16 @@
     $\mathbb{E}[\max] = \int_0^1 t\cdot 2t\,dt = 2/3$.
   source: curated
   status: fresh
+  reference:
+    exact:
+      expr: Integral(Integral(u, (v, 0, u)), (u, 0, 1)) + Integral(Integral(v, (u, 0, v)), (v, 0, 1))
+      symbols:
+        u: positive
+        v: positive
+    simulator:
+      name: max_of_uniforms
+      params:
+        k: 2
 
 - id: prob-008
   topic: probability
@@ -123,3 +190,12 @@
     $3 = 10\cdot p + 0\cdot(1-p)$, giving $p = 3/10$.
   source: curated
   status: fresh
+  reference:
+    exact:
+      expr: gamblers_ruin(3, 0, 10)
+    simulator:
+      name: walk_hits_upper
+      params:
+        start: 3
+        lower: 0
+        upper: 10

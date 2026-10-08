@@ -1,4 +1,7 @@
 # Curated linear algebra questions. All wording is original.
+# Each entry may carry a `reference:` block: the independent evidence used to verify it
+# (exact expression, named simulator, pricing inputs or code tests). Adding a question is a
+# single-file edit. Changing a reference sends the question back to `fresh` until re-verified.
 - id: linalg-001
   topic: linear_algebra
   node_id: la.determinants
@@ -12,6 +15,9 @@
     $2\cdot 3 - 1\cdot 5 = 1$.
   source: curated
   status: fresh
+  reference:
+    exact:
+      expr: det(Matrix([[2, 1], [5, 3]]))
 
 - id: linalg-002
   topic: linear_algebra
@@ -27,6 +33,9 @@
     so the eigenvalues are $5$ and $2$.
   source: curated
   status: fresh
+  reference:
+    exact:
+      expr: max_eigenvalue(Matrix([[4, 1], [2, 3]]))
 
 - id: linalg-003
   topic: linear_algebra
@@ -42,6 +51,9 @@
     proportional, so the rank is $2$.
   source: curated
   status: fresh
+  reference:
+    exact:
+      expr: rank(Matrix([[1, 2, 3], [2, 4, 6], [1, 0, 1]]))
 
 - id: linalg-004
   topic: linear_algebra
@@ -57,6 +69,9 @@
     and the trace is $10$.
   source: curated
   status: fresh
+  reference:
+    exact:
+      expr: trace(Matrix([[1, 2], [0, 3]])**2)
 
 - id: linalg-005
   topic: linear_algebra
@@ -71,6 +86,9 @@
     $\det(A^2)=\det(A)^2=(ad-bc)^2$ by multiplicativity of the determinant.
   source: curated
   status: fresh
+  reference:
+    exact:
+      expr: det(Matrix([[a, b], [c, d]])**2)
 
 - id: linalg-006
   topic: linear_algebra
@@ -87,3 +105,6 @@
     length is $\frac{36}{25}\cdot 5 = \frac{36}{5}$.
   source: curated
   status: fresh
+  reference:
+    exact:
+      expr: (2*2 + 2*2) - (2*2 - 2*1)**2/(1*1 + 2*2)

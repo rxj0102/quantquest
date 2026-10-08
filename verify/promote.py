@@ -19,10 +19,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from core import db
-from core.loader import DEFAULT_DIR, load_questions
+from core.loader import DEFAULT_DIR
 from core.schema import Status
+from verify.curated import hashes_by_id, load_curated, references_by_id
 from verify.dispatch import verify_question
-from verify.references import CURATED_REFERENCES, Reference
+from verify.references import Reference
 
 
 @dataclass(frozen=True)
@@ -91,8 +92,9 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     conn = db.connect(args.db)
     try:
-        db.upsert_questions(conn, load_questions(Path(args.data)))
-        report = promote_curated(conn, CURATED_REFERENCES)
+        entries = load_curated(Path(args.data))
+        db.upsert_questions(conn, [e.question for e in entries], hashes_by_id(entries))
+        report = promote_curated(conn, references_by_id(entries))
     finally:
         conn.close()
     print(report.format())

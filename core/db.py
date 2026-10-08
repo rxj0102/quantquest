@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from contextlib import closing
 from pathlib import Path
 
@@ -31,7 +31,8 @@ CREATE TABLE IF NOT EXISTS questions (
     source_kind   TEXT NOT NULL CHECK (source_kind IN ('curated', 'generated', 'paper')),
     status        TEXT NOT NULL CHECK (status IN ('fresh', 'trusted', 'flagged', 'retired')),
     created_at    TEXT NOT NULL,   -- ISO 8601, UTC
-    solve_stats   TEXT NOT NULL    -- JSON
+    solve_stats   TEXT NOT NULL,   -- JSON
+    reference_hash TEXT            -- fingerprint of the reference the status was earned against
 );
 CREATE INDEX IF NOT EXISTS idx_questions_pool ON questions (source_kind, status);
 CREATE INDEX IF NOT EXISTS idx_questions_node ON questions (node_id);
@@ -52,19 +53,26 @@ CREATE TABLE IF NOT EXISTS review_state (
 CREATE INDEX IF NOT EXISTS idx_review_due ON review_state (user_id, due_at);
 """
 
-# On re-load, YAML owns question content only. The database owns lifecycle data: status,
-# verification, created_at and solve_stats. If the prompt, answer or answer type changes, any
-# earlier review no longer applies, so status goes back to 'fresh' and verification is cleared
-# (CLAUDE.md rules 2 and 3).
+# On re-load, YAML owns question content and its reference. The database owns lifecycle data:
+# status, verification, created_at and solve_stats. If the prompt, answer, answer type or the
+# reference changes, any earlier review no longer applies (trust was earned against the old
+# evidence), so status goes back to 'fresh' and verification is cleared (CLAUDE.md rules 2 and 3).
+# A reference counts as changed only when both hashes are known and differ: NULL means "not
+# recorded yet" (rows from before references lived in YAML, or a caller that passes no hashes)
+# and is adopted without a reset.
 _CHANGED = """(questions.prompt_md != excluded.prompt_md
           OR questions.answer != excluded.answer
-          OR questions.answer_type != excluded.answer_type)"""
+          OR questions.answer_type != excluded.answer_type
+          OR (excluded.reference_hash IS NOT NULL
+              AND questions.reference_hash IS NOT NULL
+              AND questions.reference_hash != excluded.reference_hash))"""
 UPSERT_SQL = f"""
 INSERT INTO questions (id, topic, node_id, difficulty, format, prompt_md, answer,
                        answer_type, solution_md, verification, source, source_kind, status,
-                       created_at, solve_stats)
+                       created_at, solve_stats, reference_hash)
 VALUES (:id, :topic, :node_id, :difficulty, :format, :prompt_md, :answer, :answer_type,
-        :solution_md, :verification, :source, :source_kind, :status, :created_at, :solve_stats)
+        :solution_md, :verification, :source, :source_kind, :status, :created_at, :solve_stats,
+        :reference_hash)
 ON CONFLICT(id) DO UPDATE SET
     topic = excluded.topic,
     node_id = excluded.node_id,
@@ -77,20 +85,44 @@ ON CONFLICT(id) DO UPDATE SET
     verification = CASE WHEN {_CHANGED} THEN excluded.verification ELSE questions.verification END,
     prompt_md = excluded.prompt_md,
     answer = excluded.answer,
-    answer_type = excluded.answer_type
+    answer_type = excluded.answer_type,
+    reference_hash = COALESCE(excluded.reference_hash, questions.reference_hash)
 """
 
 
+BUSY_TIMEOUT_SECONDS = 30.0
+
+
+def _migrate(conn: sqlite3.Connection) -> None:
+    """Bring a database created by an older version up to date (idempotent, race-safe)."""
+    cols = {r["name"] for r in conn.execute("PRAGMA table_info(questions)")}
+    if "reference_hash" not in cols:
+        try:
+            conn.execute("ALTER TABLE questions ADD COLUMN reference_hash TEXT")
+            conn.commit()
+        except sqlite3.OperationalError as exc:  # another process added it first
+            if "duplicate column" not in str(exc).lower():
+                raise
+
+
 def connect(path: str | Path = ":memory:") -> sqlite3.Connection:
-    """Open a connection with row access by name and create the tables if missing."""
-    conn = sqlite3.connect(str(path))
+    """Open a connection with row access by name and create or migrate the tables.
+
+    Safe to call from several processes at once: SQLite serialises schema changes, writers wait up
+    to ``BUSY_TIMEOUT_SECONDS`` instead of failing, and file databases use WAL so readers are not
+    blocked by a writer.
+    """
+    conn = sqlite3.connect(str(path), timeout=BUSY_TIMEOUT_SECONDS)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
+    if str(path) != ":memory:":
+        conn.execute("PRAGMA journal_mode = WAL")
     conn.executescript(SCHEMA)
+    _migrate(conn)
     return conn
 
 
-def _to_row(q: Question) -> dict[str, object]:
+def _to_row(q: Question, reference_hash: str | None = None) -> dict[str, object]:
     return {
         **q.model_dump(mode="python", exclude={"verification", "solve_stats", "created_at"}),
         "format": q.format.value,
@@ -100,6 +132,7 @@ def _to_row(q: Question) -> dict[str, object]:
         "solve_stats": q.solve_stats.model_dump_json(),
         "source_kind": q.source_kind,
         "created_at": to_db(q.created_at),
+        "reference_hash": reference_hash,
     }
 
 
@@ -107,6 +140,7 @@ def question_from_row(row: sqlite3.Row) -> Question:
     """Build a ``Question`` from a row that has every column of the ``questions`` table."""
     data = dict(row)
     data.pop("source_kind")
+    data.pop("reference_hash", None)
     data["created_at"] = from_db(data["created_at"])
     return Question.model_validate(
         {
@@ -117,10 +151,20 @@ def question_from_row(row: sqlite3.Row) -> Question:
     )
 
 
-def upsert_questions(conn: sqlite3.Connection, questions: Iterable[Question]) -> None:
-    """Insert new questions; update existing ones but keep solve_stats and created_at."""
+def upsert_questions(
+    conn: sqlite3.Connection,
+    questions: Iterable[Question],
+    reference_hashes: Mapping[str, str] | None = None,
+) -> None:
+    """Insert new questions; update existing ones but keep solve_stats and created_at.
+
+    ``reference_hashes`` maps question id to the fingerprint of its current reference (see
+    ``verify.curated.reference_hash``). A different stored fingerprint resets the question to
+    ``fresh``; without a hash the stored one is left alone. See the rule above ``UPSERT_SQL``.
+    """
+    hashes = reference_hashes or {}
     with conn:
-        conn.executemany(UPSERT_SQL, [_to_row(q) for q in questions])
+        conn.executemany(UPSERT_SQL, [_to_row(q, hashes.get(q.id)) for q in questions])
 
 
 def get_question(

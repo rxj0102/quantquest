@@ -5,3 +5,5 @@ __pycache__/
 *.db
 *.sqlite
 .env
+*.db-wal
+*.db-shm
