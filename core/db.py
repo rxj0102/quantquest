@@ -6,10 +6,10 @@ import json
 import sqlite3
 from collections.abc import Iterable
 from contextlib import closing
-from datetime import datetime
 from pathlib import Path
 
 from core.schema import Question, Status, Verification
+from core.timeutil import from_db, to_db
 
 # Never shown to users: flagged (failed verification or reported) and retired questions.
 HIDDEN_STATUSES = (Status.FLAGGED.value, Status.RETIRED.value)
@@ -35,6 +35,21 @@ CREATE TABLE IF NOT EXISTS questions (
 );
 CREATE INDEX IF NOT EXISTS idx_questions_pool ON questions (source_kind, status);
 CREATE INDEX IF NOT EXISTS idx_questions_node ON questions (node_id);
+
+-- Per-user, per-question spaced-repetition state. user_id is part of the key so multi-user
+-- support needs no migration; today there is one local user. All datetimes are UTC (core.timeutil).
+CREATE TABLE IF NOT EXISTS review_state (
+    user_id           TEXT NOT NULL,
+    question_id       TEXT NOT NULL REFERENCES questions (id),
+    ease              REAL NOT NULL CHECK (ease >= 1.3),
+    interval_days     INTEGER NOT NULL CHECK (interval_days >= 0),
+    repetitions       INTEGER NOT NULL CHECK (repetitions >= 0),
+    lapses            INTEGER NOT NULL CHECK (lapses >= 0),
+    due_at            TEXT NOT NULL,
+    last_reviewed_at  TEXT,
+    PRIMARY KEY (user_id, question_id)
+);
+CREATE INDEX IF NOT EXISTS idx_review_due ON review_state (user_id, due_at);
 """
 
 # On re-load, YAML owns question content only. The database owns lifecycle data: status,
@@ -70,6 +85,7 @@ def connect(path: str | Path = ":memory:") -> sqlite3.Connection:
     """Open a connection with row access by name and create the tables if missing."""
     conn = sqlite3.connect(str(path))
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
     conn.executescript(SCHEMA)
     return conn
 
@@ -83,14 +99,15 @@ def _to_row(q: Question) -> dict[str, object]:
         "verification": q.verification.model_dump_json(),
         "solve_stats": q.solve_stats.model_dump_json(),
         "source_kind": q.source_kind,
-        "created_at": q.created_at.isoformat(),
+        "created_at": to_db(q.created_at),
     }
 
 
-def _from_row(row: sqlite3.Row) -> Question:
+def question_from_row(row: sqlite3.Row) -> Question:
+    """Build a ``Question`` from a row that has every column of the ``questions`` table."""
     data = dict(row)
     data.pop("source_kind")
-    data["created_at"] = datetime.fromisoformat(data["created_at"])
+    data["created_at"] = from_db(data["created_at"])
     return Question.model_validate(
         {
             **data,
@@ -119,7 +136,7 @@ def get_question(
         sql += f" AND status NOT IN {_HIDDEN_SQL}"
     with closing(conn.execute(sql, (question_id,))) as cur:
         row = cur.fetchone()
-    return _from_row(row) if row else None
+    return question_from_row(row) if row else None
 
 
 def list_questions(
@@ -147,7 +164,7 @@ def list_questions(
         params.append(status)
     where = f" WHERE {' AND '.join(clauses)}" if clauses else ""
     with closing(conn.execute(f"SELECT * FROM questions{where} ORDER BY id", params)) as cur:
-        return [_from_row(r) for r in cur.fetchall()]
+        return [question_from_row(r) for r in cur.fetchall()]
 
 
 def record_attempt(conn: sqlite3.Connection, question_id: str, *, correct: bool) -> None:

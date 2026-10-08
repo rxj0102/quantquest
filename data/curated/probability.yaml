@@ -110,7 +110,7 @@
 
 - id: prob-008
   topic: probability
-  node_id: prob.random_walks
+  node_id: prob.expectation
   difficulty: 4
   format: probability
   prompt_md: |

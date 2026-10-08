@@ -94,6 +94,7 @@ def test_near_miss_probability_answers_fail(wrong: str) -> None:
     ref = Reference(exact=ExactSpec(expr="1/9"), simulator=DICE)
     v = verify_question(q(answer=wrong), ref)
     assert v.result == "fail"
+    assert "monte_carlo" not in v.method  # no 1e6-trial run once the exact check has failed
 
 
 def test_monte_carlo_can_fail_when_exact_passes() -> None:

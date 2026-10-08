@@ -1,7 +1,7 @@
 # Curated statistics questions. All wording is original.
 - id: stat-001
   topic: statistics
-  node_id: stat.sampling
+  node_id: stat.moments
   difficulty: 1
   format: mental_math
   prompt_md: |
@@ -76,7 +76,7 @@
 
 - id: stat-006
   topic: statistics
-  node_id: stat.inference
+  node_id: stat.estimation
   difficulty: 2
   format: mental_math
   prompt_md: |

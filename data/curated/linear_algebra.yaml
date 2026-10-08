@@ -30,7 +30,7 @@
 
 - id: linalg-003
   topic: linear_algebra
-  node_id: la.rank
+  node_id: la.determinants
   difficulty: 2
   format: derivation
   prompt_md: |

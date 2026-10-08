@@ -1,0 +1,47 @@
+# Skill tree. To extend it, add a node block; ids are referenced by question node_id.
+# tracks: how much each interview track cares about the node (0 to 1, all three required).
+# prerequisites: node ids that must be mastered before this node unlocks.
+# Optional per node: mastery_threshold, min_trusted (override the defaults below).
+min_trusted_default: 3        # trusted questions a node needs before it can be mastered
+mastery_threshold_default: 0.6
+
+nodes:
+  - id: prob.counting
+    title: Counting and basic probability
+    tracks: {behavioral_quant: 0.4, quant_research: 0.8, risk_quant: 0.6}
+    prerequisites: []
+
+  - id: prob.conditional
+    title: Conditional probability and Bayes
+    tracks: {behavioral_quant: 0.5, quant_research: 0.9, risk_quant: 0.8}
+    prerequisites: [prob.counting]
+
+  - id: prob.expectation
+    title: Expectation, martingales and random walks
+    tracks: {behavioral_quant: 0.4, quant_research: 0.9, risk_quant: 0.7}
+    prerequisites: [prob.counting]
+
+  - id: stat.moments
+    title: Moments, variance and sampling
+    tracks: {behavioral_quant: 0.3, quant_research: 0.8, risk_quant: 0.9}
+    prerequisites: [prob.expectation]
+
+  - id: stat.estimation
+    title: Estimation and inference
+    tracks: {behavioral_quant: 0.3, quant_research: 1.0, risk_quant: 0.8}
+    prerequisites: [stat.moments, prob.conditional]
+
+  - id: la.determinants
+    title: Determinants and rank
+    tracks: {behavioral_quant: 0.2, quant_research: 0.7, risk_quant: 0.5}
+    prerequisites: []
+
+  - id: la.eigen
+    title: Eigenvalues and eigenvectors
+    tracks: {behavioral_quant: 0.2, quant_research: 0.8, risk_quant: 0.8}
+    prerequisites: [la.determinants]
+
+  - id: la.projections
+    title: Projections and least squares
+    tracks: {behavioral_quant: 0.2, quant_research: 0.9, risk_quant: 0.7}
+    prerequisites: [la.determinants]
