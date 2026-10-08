@@ -343,3 +343,37 @@
     exact:
       expr: Sum(m*(6 - m), (m, 1, 5)) / binomial(6, 2)
       symbols: {m: integer}
+
+- id: prob-012
+  topic: probability
+  node_id: prob.conditional
+  difficulty: 3
+  format: probability
+  prompt_md: |
+    A rare defect affects $2\%$ of the circuit boards from a factory. An inspection machine flags
+    $90\%$ of defective boards and also flags $5\%$ of sound boards. Every board is inspected twice.
+    The two inspections are independent of each other for any one board: once you know whether it
+    is defective or sound, the first result tells you nothing about the second. A randomly chosen
+    board is flagged on both inspections. What is the probability that it is actually defective? Give your
+    answer as a fraction in lowest terms.
+  answer: "324/373"
+  answer_type: numeric
+  solution_md: |
+    Two independent flags multiply: a defective board is flagged twice with probability
+    $0.9^2 = 0.81$, a sound board with probability $0.05^2 = 0.0025$. By Bayes' rule
+    $$
+    \begin{aligned}
+    P(\text{defective}\mid\text{flagged twice})
+    &= \frac{0.02\cdot 0.81}{0.02\cdot 0.81 + 0.98\cdot 0.0025} \\
+    &= \frac{0.0162}{0.01865} = \frac{324}{373}\approx 0.869.
+    \end{aligned}
+    $$
+  source: curated
+  status: fresh
+  reference:
+    exact:
+      expr: >-
+        (400*Rational(9, 10)**2) / (400*Rational(9, 10)**2 + 19600*Rational(1, 20)**2)
+    simulator:
+      name: screening_posterior
+      params: {prevalence: 0.02, sensitivity: 0.81, false_positive: 0.0025}

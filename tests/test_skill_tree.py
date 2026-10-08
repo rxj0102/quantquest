@@ -289,7 +289,7 @@ def test_content_report_lists_counts_and_gaps(trusted_conn) -> None:
     rep = content_report(load_tree(), db.list_questions(trusted_conn))
     counts = {r.node_id: r.trusted_count for r in rep.rows}
     assert counts == {
-        "prob.counting": 3, "prob.conditional": 7, "prob.expectation": 3, "stat.moments": 3,
+        "prob.counting": 3, "prob.conditional": 8, "prob.expectation": 3, "stat.moments": 3,
         "stat.estimation": 8, "la.determinants": 3, "la.eigen": 8, "la.projections": 7,
     }  # fmt: skip
     assert rep.below_minimum == []  # every node has at least the minimum

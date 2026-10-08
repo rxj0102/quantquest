@@ -16,7 +16,7 @@ def test_every_node_is_listed_in_tree_order(trusted_conn) -> None:
 def test_trusted_counts_statuses_and_gaps(trusted_conn) -> None:
     v = view(trusted_conn)
     assert {k: (n.trusted_count, n.min_trusted) for k, n in v.items()} == {
-        "prob.counting": (3, 3), "prob.conditional": (7, 3), "prob.expectation": (3, 3),
+        "prob.counting": (3, 3), "prob.conditional": (8, 3), "prob.expectation": (3, 3),
         "stat.moments": (3, 3), "stat.estimation": (8, 3), "la.determinants": (3, 3),
         "la.eigen": (8, 3), "la.projections": (7, 3),
     }  # fmt: skip

@@ -27,8 +27,10 @@ def test_skill_tree_page_shows_only_trusted_counts() -> None:
     assert_clean(text, "skill tree")
     captions = [c.value for c in at.caption]
     assert captions.count("3/3 trusted questions") == 4  # unchanged by the hidden questions
-    assert captions.count("7/3 trusted questions") == 2  # prob.conditional, la.projections
-    assert captions.count("8/3 trusted questions") == 2  # stat.estimation, la.eigen
+    assert captions.count("7/3 trusted questions") == 1  # la.projections (linalg-014 was cut)
+    assert (
+        captions.count("8/3 trusted questions") == 3
+    )  # prob.conditional, stat.estimation, la.eigen
     assert not [c for c in captions if "Needs" in c]
 
 

@@ -11,7 +11,7 @@ EXPECTED_CURATED_IDS = [
     "linalg-007", "linalg-008", "linalg-009", "linalg-010", "linalg-011", "linalg-012",
     "linalg-013", "linalg-015", "linalg-016", "linalg-017", "linalg-018", "linalg-019",
     "prob-001", "prob-002", "prob-003", "prob-004", "prob-005", "prob-006", "prob-007",
-    "prob-008", "prob-009", "prob-010", "prob-011", "prob-014", "prob-015",
+    "prob-008", "prob-009", "prob-010", "prob-011", "prob-012", "prob-014", "prob-015",
     "stat-001", "stat-002", "stat-003", "stat-004", "stat-005", "stat-006",
     "stat-007", "stat-008", "stat-009", "stat-010", "stat-011", "stat-012",
 ]  # fmt: skip
