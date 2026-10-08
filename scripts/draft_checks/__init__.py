@@ -9,4 +9,6 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-THIRD_CHECKS: dict[str, Callable[[], object]] = {}
+from scripts.draft_checks import prob_conditional  # noqa: E402
+
+THIRD_CHECKS: dict[str, Callable[[], object]] = {**prob_conditional.CHECKS}
