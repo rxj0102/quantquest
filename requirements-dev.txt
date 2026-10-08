@@ -1,0 +1,7 @@
+-r requirements.txt
+pytest>=8
+ruff>=0.5
+# Dev-only: scripts/ answer checks (seed for M2 verifier tests). Not imported by app code.
+sympy>=1.12
+numpy>=1.26
+scipy>=1.11
