@@ -97,7 +97,9 @@ def test_bad_kind_and_steps() -> None:
     with pytest.raises(ValueError):
         binomial_price(**BASE, kind="call", n_steps=0)
     with pytest.raises(ValueError):
-        binomial_price(**BASE, kind="call", n_steps=10**7)
+        binomial_price(
+            **BASE, kind="call", n_steps=20_001
+        )  # one past the documented limit: a raised limit computes it (a second or two) and fails, instead of hanging on a huge tree
 
 
 # --- check_price: known good / known bad ----------------------------------------------------
@@ -154,3 +156,64 @@ def test_disagreeing_references_fail_closed() -> None:
 
 def test_spec_round_trips_through_json() -> None:
     assert PricingSpec.model_validate_json(CALL.model_dump_json()) == CALL
+
+
+# --- gap-killing tests found by scripts/mutation/pricing.sh (see scripts/mutation/SURVIVORS.md)
+
+
+@pytest.mark.parametrize("field", ["S", "K", "sigma", "T"])
+def test_spec_requires_strictly_positive_inputs(field: str) -> None:
+    from pydantic import ValidationError
+
+    for bad in (0.0, -1.0):
+        with pytest.raises(ValidationError):
+            PricingSpec(**{**BASE, field: bad}, kind="call")
+
+
+def test_spec_allows_negative_rates_and_yields() -> None:
+    spec = PricingSpec(**{**BASE, "r": -0.01}, q=-0.02, kind="put")
+    assert spec.r == -0.01 and spec.q == -0.02
+
+
+@pytest.mark.parametrize("field", ["S", "K", "r", "sigma", "T", "q"])
+@pytest.mark.parametrize("bad", [float("nan"), float("inf"), float("-inf")])
+def test_spec_rejects_non_finite_inputs(field: str, bad: float) -> None:
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError):
+        PricingSpec(**{**BASE, field: bad}, kind="call")
+
+
+@pytest.mark.parametrize("r", [0.5, -0.5])
+def test_tree_refuses_a_risk_neutral_probability_outside_0_1(r: float) -> None:
+    inputs = {**BASE, "r": r, "sigma": 0.01}
+    with pytest.raises(ValueError, match="risk-neutral"):
+        binomial_price(**inputs, kind="call", n_steps=10)
+    result = check_price("10", PricingSpec(**inputs, kind="call"), n_steps=10)
+    assert result.outcome == "error" and "risk-neutral" in result.details
+
+
+def test_a_tree_that_disagrees_with_black_scholes_is_an_error_not_a_verdict() -> None:
+    """With 5 steps the tree is 0.36 away from Black-Scholes, far beyond cross_tol (0.02)."""
+    spec = PricingSpec(**BASE, kind="call")
+    bs = bs_price(**BASE, kind="call")
+    for claimed in (repr(bs), "10"):  # even the correct price is not certified
+        result = check_price(claimed, spec, n_steps=5)
+        assert result.outcome == "error"
+        assert "references disagree" in result.details
+    # a looser cross_tol lets the same comparison reach a verdict
+    assert check_price(repr(bs), spec, n_steps=5, cross_tol=1.0).outcome == "pass"
+
+
+@pytest.mark.parametrize("n_steps", [0, -3])
+def test_unusable_tree_sizes_are_an_error_result_not_an_exception(n_steps: int) -> None:
+    result = check_price("10", PricingSpec(**BASE, kind="call"), n_steps=n_steps)
+    assert result.outcome == "error"
+    assert "pricing inputs rejected" in result.details
+
+
+def test_a_price_exactly_equal_to_the_closed_form_passes_at_zero_tolerance() -> None:
+    spec = PricingSpec(**BASE, kind="call")
+    exact = repr(bs_price(**BASE, kind="call"))
+    assert check_price(exact, spec, abs_tol=0.0).outcome == "pass"
+    assert check_price("10.4506", spec, abs_tol=0.0).outcome == "fail"

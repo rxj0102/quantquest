@@ -4,7 +4,7 @@
 #   scripts/mutation/mutate.sh FILE 'SED-EXPRESSION' PYTEST-ARGS...
 #   e.g. scripts/mutation/mutate.sh verify/answers.py 's/if False:/if True:/' tests/test_answers.py
 #
-# Prints one line: CAUGHT (tests failed), SURVIVED (tests still pass: a gap or an equivalent
+# Prints one line: CAUGHT (tests failed, or hung past MUTATION_TIMEOUT seconds, default 300), SURVIVED (tests still pass: a gap or an equivalent
 # mutant), INVALID (pytest did not run the tests, e.g. an import error), or NO-OP (the sed
 # expression changed nothing). Exit codes: 0 caught, 1 survived, 2 invalid or no-op,
 # 3 another run holds the lock, 4 the tests already fail without the mutation.
@@ -35,11 +35,12 @@ trap restore EXIT INT TERM
 sed -i "$expr" "$f"
 if cmp -s "$f" "$f.orig"; then echo "NO-OP    $f :: $expr"; exit 2; fi
 clean
-out=$("$PY" -m pytest -q -x -p no:cacheprovider "$@" 2>&1); code=$?
+out=$(timeout "${MUTATION_TIMEOUT:-300}" "$PY" -m pytest -q -x -p no:cacheprovider "$@" 2>&1); code=$?
 restore; trap - EXIT INT TERM
 clean
 case $code in
   1) echo "CAUGHT   $f :: $expr"; exit 0 ;;
+  124) echo "CAUGHT   $f :: $expr (the tests hung: timed out after ${MUTATION_TIMEOUT:-300}s)"; exit 0 ;;
   0) echo "SURVIVED $f :: $expr"; echo "$out" | tail -3; exit 1 ;;
   *) echo "INVALID  $f :: $expr (pytest exit code $code)"; echo "$out" | tail -3; exit 2 ;;
 esac

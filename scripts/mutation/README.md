@@ -12,6 +12,10 @@ From the repository root, with the project virtualenv in place (`.venv`, or set 
 scripts/mutation/dice_event.sh     # the dice_event simulator (28 mutants, about a minute)
 scripts/mutation/m4.sh             # the M4 logic: answers, XP and streaks, practice, interview,
                                    # visibility, reference hash, worker pool (28 mutants)
+scripts/mutation/parsing.sh        # verify/parsing.py, the expression parser (37 mutants)
+scripts/mutation/timeout.sh        # verify/timeout.py, the worker pool (28 mutants; a mutant that hangs
+                                   # is stopped by MUTATION_TIMEOUT)
+scripts/mutation/pricing.sh        # verify/pricing.py, Black-Scholes and the tree (34 mutants)
 scripts/mutation/mutate.sh FILE 'SED-EXPRESSION' PYTEST-ARGS...    # one mutant by hand
 ```
 
@@ -26,7 +30,7 @@ scripts/mutation/mutate.sh verify/answers.py \
 
 | line starts with | meaning |
 |---|---|
-| `CAUGHT` | the tests failed with the bug in: good |
+| `CAUGHT` | the tests failed with the bug in: good. A mutant that makes the tests hang is stopped after `MUTATION_TIMEOUT` seconds (default 300) and also counted as caught, with `(the tests hung ...)` in the line, because a hung test run would fail CI too. Keep the limit well above the normal run time, or a slow but passing run would be miscounted as caught |
 | `SURVIVED` | the tests still passed: either a gap in the tests, or an equivalent mutant (the change does not alter behaviour). Read the mutant and decide; do not assume either |
 | `INVALID` | pytest did not run the tests properly (an import error, a syntax error in the mutated file). Not a verdict |
 | `NO-OP` | the sed expression changed nothing (the code it matched has moved). Fix the expression |
@@ -70,6 +74,13 @@ single-line `sed` expression and will be reported as `NO-OP`.
 - The `abs_tol=1e-12` mutant in `verify/answers.py` (exact-integer answers must not get an absolute
   tolerance) is caught, by `test_exact_means_exact_even_at_floating_point_dust`.
 
-Not covered by these scripts: the M2 verifier library and the M3 core. Those were mutation tested
-during development, but the mutant lists and results were not kept, so they cannot be re-run from
-here yet.
+`parsing.sh`, `timeout.sh`, `pricing.sh` (second run, 2026-10-08, after the fixes and new tests):
+99 mutants, 86 caught, 13 survived, 0 invalid (parsing 31 of 37, timeout 22 of 28, pricing 33 of
+34). The first run had 97 mutants (35 + 28 + 34) and 51 caught; the second adds two parsing
+mutants that revert the `safe_parse` overflow fixes. All 33 test gaps from the first run are
+killed. The 13 survivors are equivalent (8, each probed) or likely equivalent and unproven (5);
+every one is listed with its reason in [SURVIVORS.md](SURVIVORS.md).
+
+Not covered by these scripts: the M2 `sympy_check`, `monte_carlo` and `code_runner` modules and
+the M3 core. Those were mutation tested during development, but the mutant lists and results were
+not kept, so they cannot be re-run from here yet.

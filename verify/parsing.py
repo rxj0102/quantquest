@@ -128,6 +128,8 @@ def _const_value(node: ast.AST) -> Fraction | None:
     Raises ParseRejected for numeric subtrees that would be huge, before computing them.
     """
     if isinstance(node, ast.Constant) and type(node.value) in (int, float):
+        if isinstance(node.value, float) and not math.isfinite(node.value):
+            raise ParseRejected("numeric literal out of range")
         return Fraction(node.value)
     if isinstance(node, ast.UnaryOp):
         v = _const_value(node.operand)
@@ -151,7 +153,10 @@ def _const_value(node: ast.AST) -> Fraction | None:
                 return None
             if left == 0:
                 return None if right < 0 else Fraction(0)
-            digits = abs(math.log10(abs(left))) * abs(int(right))
+            # log10(Fraction) converts to float first: it overflows past 1e308 and hits log10(0)
+            # below 1e-324. Take the logs of the exact integers instead.
+            magnitude = math.log10(abs(left.numerator)) - math.log10(left.denominator)
+            digits = abs(magnitude) * abs(int(right))
             if digits > MAX_DIGITS_ESTIMATE:
                 raise ParseRejected("numeric power too large")
             return left ** int(right)
