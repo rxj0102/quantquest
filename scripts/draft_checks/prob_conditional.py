@@ -57,6 +57,12 @@ def prob_014() -> F:
     return F(sum(1 for r in given if r.count(5) == 2), len(given))
 
 
+def prob_015() -> F:
+    """Enumerate every ordered draw of three tickets from 1..8, condition on max == 7."""
+    given = [d for d in itertools.permutations(range(1, 9), 3) if max(d) == 7]
+    return sum((F(min(d)) for d in given), F(0)) / len(given)
+
+
 CHECKS = {
     "prob-009": prob_009,
     "prob-010": prob_010,
@@ -64,4 +70,5 @@ CHECKS = {
     "prob-012": prob_012,
     "prob-013": prob_013,
     "prob-014": prob_014,
+    "prob-015": prob_015,
 }

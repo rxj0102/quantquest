@@ -1,0 +1,24 @@
+# HELD drafts: removed from their node at review, not loaded by the app.
+# prob-013: moved out of prob.conditional (reads as algebra of independence, not conditioning).
+- id: prob-013
+  topic: probability
+  node_id: prob.conditional
+  difficulty: 3
+  format: derivation
+  prompt_md: |
+    Events $A$ and $B$ are independent, with $P(A)=\tfrac25$. The probability that at least one of
+    them occurs is $q$. Express $P(B)$ in terms of $q$. Give your answer as a single expression
+    in $q$.
+  answer: "(5*q - 2)/3"
+  answer_type: symbolic
+  solution_md: |
+    Independence means $P(B\mid A)=P(B)$, so $P(A\cap B)=P(A)P(B)$. Writing $p=P(B)$,
+    $$
+    q = P(A)+P(B)-P(A\cap B) = \tfrac25 + p - \tfrac25 p = \tfrac25 + \tfrac35 p,
+    $$
+    hence $p = \dfrac{5q-2}{3}$.
+  source: curated
+  status: fresh
+  reference:
+    exact:
+      expr: solve(Rational(2, 5) + p - Rational(2, 5)*p - q, p)[0]
