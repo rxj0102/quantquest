@@ -5,16 +5,18 @@ import pytest
 from core.loader import LoadError, load_file, load_questions
 from core.schema import AnswerType, Status
 from tests.conftest import make_question
+from tests.pool import N_CURATED
 
 
-def test_loads_20_curated_questions(curated) -> None:
-    assert len(curated) == 20
+def test_loads_every_curated_question(curated) -> None:
+    assert len(curated) == N_CURATED
 
 
 def test_ids_unique_and_topics_covered(curated) -> None:
-    assert len({q.id for q in curated}) == 20
+    assert len({q.id for q in curated}) == N_CURATED
     counts = {t: sum(q.topic == t for q in curated) for t in {q.topic for q in curated}}
-    assert counts == {"probability": 8, "statistics": 6, "linear_algebra": 6}
+    assert set(counts) == {"probability", "statistics", "linear_algebra"}
+    assert all(n >= 6 for n in counts.values()) and sum(counts.values()) == N_CURATED
 
 
 def test_curated_are_fresh_until_m2(curated) -> None:

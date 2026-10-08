@@ -11,6 +11,7 @@ from core.loader import load_questions
 from core.scheduler import SM2, Rating, ReviewState
 from core.schema import Question, Status, Verification
 from tests.conftest import make_question
+from tests.pool import N_TRUSTED
 
 T0 = datetime(2026, 1, 1, 9, 0, tzinfo=UTC)
 USER = review.DEFAULT_USER_ID
@@ -300,11 +301,11 @@ def test_next_due_compares_in_utc_whatever_the_callers_offset(
 
 
 def test_unseen_trusted_lists_questions_without_state(trusted_conn: sqlite3.Connection) -> None:
-    assert len(review.unseen_trusted(trusted_conn, USER)) == 19
+    assert len(review.unseen_trusted(trusted_conn, USER)) == N_TRUSTED
     review.record_review(trusted_conn, USER, "prob-001", G, T0)
     ids = [x.id for x in review.unseen_trusted(trusted_conn, USER)]
-    assert "prob-001" not in ids and len(ids) == 18 and "stat-005" not in ids
-    assert len(review.unseen_trusted(trusted_conn, "bob")) == 19
+    assert "prob-001" not in ids and len(ids) == N_TRUSTED - 1 and "stat-005" not in ids
+    assert len(review.unseen_trusted(trusted_conn, "bob")) == N_TRUSTED
 
 
 # --- reload safety --------------------------------------------------------------------------

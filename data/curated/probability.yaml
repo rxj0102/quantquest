@@ -199,3 +199,147 @@
         start: 3
         lower: 0
         upper: 10
+
+- id: prob-009
+  topic: probability
+  node_id: prob.conditional
+  difficulty: 1
+  format: mental_math
+  prompt_md: |
+    A fair $10$-sided die with faces numbered $1$ to $10$ is rolled once. You are told only that
+    the result is a multiple of $3$. What is the probability that the result is greater than $5$?
+    Give your answer as a fraction in lowest terms.
+  answer: "2/3"
+  answer_type: numeric
+  solution_md: |
+    Given that the result is a multiple of $3$, the possibilities are $3, 6, 9$, all equally likely.
+    Two of them, $6$ and $9$, exceed $5$, so the probability is $2/3$.
+  source: curated
+  status: fresh
+  reference:
+    exact:
+      expr: (floor(10/3) - floor(5/3))/floor(10/3)
+    simulator:
+      name: dice_event
+      params:
+        dice: [10]
+        given:
+          - {stat: first, mod: 3, cmp: eq, value: 0}
+        event:
+          - {stat: first, cmp: gt, value: 5}
+
+- id: prob-010
+  topic: probability
+  node_id: prob.conditional
+  difficulty: 2
+  format: probability
+  prompt_md: |
+    A red die and a blue die, each fair with six faces, are thrown together. A friend tells you
+    the two dice landed on different numbers. With that information, what is the probability
+    that the two numbers total $8$? Give your answer as a fraction in lowest terms.
+  answer: "2/15"
+  answer_type: numeric
+  solution_md: |
+    There are $6\cdot 5 = 30$ equally likely ordered outcomes with different numbers. Those
+    totalling $8$ are $(2,6), (6,2), (3,5), (5,3)$; the outcome $(4,4)$ is ruled out by the
+    condition. So the probability is $4/30 = 2/15$.
+  source: curated
+  status: fresh
+  reference:
+    exact:
+      expr: >-
+        Sum(Sum(KroneckerDelta(a + b, 8)*(1 - KroneckerDelta(a, b)), (a, 1, 6)), (b, 1, 6))
+        / Sum(Sum(1 - KroneckerDelta(a, b), (a, 1, 6)), (b, 1, 6))
+      symbols: {a: integer, b: integer}
+    simulator:
+      name: dice_event
+      params:
+        dice: [6, 6]
+        given:
+          - {stat: num_distinct, cmp: eq, value: 2}
+        event:
+          - {stat: sum, cmp: eq, value: 8}
+
+- id: prob-011
+  topic: probability
+  node_id: prob.conditional
+  difficulty: 2
+  format: derivation
+  prompt_md: |
+    A technician keeps two boxes of resistors. Box A holds $3$ faulty and $9$ good resistors; box B
+    holds $7$ faulty and $13$ good ones. She rolls a fair six-sided die: on a $1$ or a $2$ she opens
+    box A, otherwise box B. She then draws one resistor at random from the box she opened. What is
+    the probability that the resistor is faulty? Give your answer as a fraction in lowest terms.
+  answer: "19/60"
+  answer_type: numeric
+  solution_md: |
+    By the law of total probability, with $P(A)=\tfrac13$ and $P(B)=\tfrac23$:
+    $$
+    \begin{aligned}
+    P(\text{faulty}) &= \tfrac13\cdot\tfrac{3}{12} + \tfrac23\cdot\tfrac{7}{20} \\
+    &= \tfrac1{12} + \tfrac{7}{30} = \tfrac{5}{60} + \tfrac{14}{60} = \tfrac{19}{60}.
+    \end{aligned}
+    $$
+  source: curated
+  status: fresh
+  reference:
+    exact:
+      expr: Rational(1, 3)*Rational(3, 12) + Rational(2, 3)*Rational(7, 20)
+
+- id: prob-014
+  topic: probability
+  node_id: prob.conditional
+  difficulty: 4
+  format: probability
+  prompt_md: |
+    Four fair six-sided dice are rolled. You are told that the largest number showing is exactly
+    $5$. Given this, what is the probability that exactly two of the dice show a $5$? Give your
+    answer as a fraction in lowest terms.
+  answer: "32/123"
+  answer_type: numeric
+  solution_md: |
+    Outcomes with maximum exactly $5$: every die is at most $5$, and not every die is at most $4$,
+    so there are $5^4-4^4 = 369$. Of these, exactly two $5$s with the other two dice in
+    $\{1,2,3,4\}$ gives $\binom42\cdot 4^2 = 96$. The probability is $96/369 = 32/123$.
+  source: curated
+  status: fresh
+  reference:
+    exact:
+      expr: (binomial(4, 2)*4**2)/(5**4 - 4**4)
+    simulator:
+      name: dice_event
+      params:
+        dice: [6, 6, 6, 6]
+        given:
+          - {stat: max, cmp: eq, value: 5}
+        event:
+          - {stat: count_eq, face: 5, cmp: eq, value: 2}
+
+- id: prob-015
+  topic: probability
+  node_id: prob.conditional
+  difficulty: 3
+  format: derivation
+  prompt_md: |
+    Three tickets are drawn one after another, without replacement, from a box holding tickets
+    numbered $1$ through $8$. You learn that the largest of the three numbers drawn is $7$. Given
+    this, what is the expected value of the smallest number drawn? Give your answer as a fraction
+    in lowest terms.
+  answer: "7/3"
+  answer_type: numeric
+  solution_md: |
+    The largest being $7$ means the other two tickets are a uniformly random pair from
+    $\{1,\dots,6\}$, so there are $\binom62 = 15$ equally likely pairs. The smallest ticket is
+    $m$ exactly when the other member of the pair is one of the $6-m$ values above $m$, so
+    $$
+    \begin{aligned}
+    E[\text{smallest}\mid \max=7] &= \frac{1}{15}\sum_{m=1}^{5} m\,(6-m) \\
+    &= \frac{5+8+9+8+5}{15} = \frac{35}{15} = \frac73.
+    \end{aligned}
+    $$
+  source: curated
+  status: fresh
+  reference:
+    exact:
+      expr: Sum(m*(6 - m), (m, 1, 5)) / binomial(6, 2)
+      symbols: {m: integer}

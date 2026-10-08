@@ -7,6 +7,7 @@ from core import db
 from core.loader import load_questions
 from core.schema import Question, Status
 from tests.conftest import make_question
+from tests.pool import N_CURATED
 
 
 @pytest.fixture
@@ -40,7 +41,7 @@ def test_table_and_indexes_created(conn: sqlite3.Connection) -> None:
 
 def test_all_curated_round_trip(conn: sqlite3.Connection, curated: list[Question]) -> None:
     db.upsert_questions(conn, curated)
-    assert len(db.list_questions(conn)) == 20
+    assert len(db.list_questions(conn)) == N_CURATED
     for q in curated:
         assert db.get_question(conn, q.id) == q
 
@@ -71,13 +72,13 @@ def test_pools_stay_separate(conn: sqlite3.Connection, curated: list[Question]) 
     gen = Question.model_validate(make_question(id="gen-001", source="generated"))
     db.upsert_questions(conn, [*curated, gen])
     assert [q.id for q in db.list_questions(conn, source_kind="generated")] == ["gen-001"]
-    assert len(db.list_questions(conn, source_kind="curated")) == 20
+    assert len(db.list_questions(conn, source_kind="curated")) == N_CURATED
     assert db.list_questions(conn, source_kind="paper") == []
 
 
 def test_list_filter_by_status(conn: sqlite3.Connection, curated: list[Question]) -> None:
     db.upsert_questions(conn, curated)
-    assert len(db.list_questions(conn, status="fresh")) == 20
+    assert len(db.list_questions(conn, status="fresh")) == N_CURATED
     assert db.list_questions(conn, status="trusted") == []
 
 
@@ -158,7 +159,7 @@ def test_flagged_and_retired_are_hidden_by_default(
     for qid, status in [("prob-001", "flagged"), ("prob-002", "retired")]:
         conn.execute("UPDATE questions SET status = ? WHERE id = ?", (status, qid))
     ids = {q.id for q in db.list_questions(conn)}
-    assert "prob-001" not in ids and "prob-002" not in ids and len(ids) == 18
+    assert "prob-001" not in ids and "prob-002" not in ids and len(ids) == N_CURATED - 2
     assert db.get_question(conn, "prob-001") is None
     assert db.get_question(conn, "prob-002", include_hidden=True) is not None
     all_ids = {q.id for q in db.list_questions(conn, include_hidden=True)}

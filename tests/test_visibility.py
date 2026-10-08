@@ -10,6 +10,7 @@ from core import db, interview, practice, review
 from core.skill_tree import load_tree
 from core.skill_view import build_view
 from tests.conftest import add_question
+from tests.pool import N_TRUSTED
 
 APP = Path(__file__).resolve().parent.parent / "app"
 T0 = datetime(2026, 1, 15, 14, 0, tzinfo=UTC)
@@ -40,7 +41,7 @@ def texts(questions) -> str:
 
 def test_the_playable_pool_contains_trusted_questions_only(world) -> None:
     playable = db.list_playable(world)
-    assert len(playable) == 19
+    assert len(playable) == N_TRUSTED
     assert not any(m in texts(playable) for m in HIDDEN.values())
     assert db.get_playable(world, "hfp-001") is None
     assert db.get_playable(world, "prob-001").id == "prob-001"

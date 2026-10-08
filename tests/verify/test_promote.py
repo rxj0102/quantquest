@@ -7,6 +7,7 @@ from core import db
 from core.loader import load_questions
 from core.schema import Question, Status
 from tests.conftest import make_question
+from tests.pool import N_TRUSTED
 from verify.promote import PromotionReport, main, promote_curated
 from verify.references import CURATED_REFERENCES, ExactSpec, Reference
 
@@ -29,11 +30,11 @@ def promoted_report_and_db(tmp_path_factory):
 
 def test_promotes_verified_curated_questions(promoted_report_and_db) -> None:
     report, c = promoted_report_and_db
-    assert len(report.promoted) == 19
+    assert len(report.promoted) == N_TRUSTED
     assert report.flagged == []
     assert [u.question_id for u in report.unverified] == ["stat-005"]
     trusted = db.list_questions(c, status="trusted")
-    assert len(trusted) == 19
+    assert len(trusted) == N_TRUSTED
     assert all(t.verification.result == "pass" for t in trusted)
     assert all(t.status is Status.TRUSTED and t.source == "curated" for t in trusted)
 
@@ -48,13 +49,13 @@ def test_promotion_is_idempotent(promoted_report_and_db) -> None:
     _, c = promoted_report_and_db
     again = promote_curated(c, CURATED_REFERENCES)
     assert again.promoted == [] and again.flagged == []
-    assert len(db.list_questions(c, status="trusted")) == 19
+    assert len(db.list_questions(c, status="trusted")) == N_TRUSTED
 
 
 def test_reload_after_promotion_keeps_trust(promoted_report_and_db) -> None:
     _, c = promoted_report_and_db
     db.upsert_questions(c, load_questions())
-    assert len(db.list_questions(c, status="trusted")) == 19
+    assert len(db.list_questions(c, status="trusted")) == N_TRUSTED
 
 
 def _break_answer(conn: sqlite3.Connection, qid: str, wrong: str) -> None:
@@ -66,7 +67,7 @@ def test_failed_verification_flags_and_reports(conn: sqlite3.Connection) -> None
     _break_answer(conn, "prob-001", "1/8")
     report = promote_curated(conn, CURATED_REFERENCES)
     assert [f.question_id for f in report.flagged] == ["prob-001"]
-    assert len(report.promoted) == 18
+    assert len(report.promoted) == N_TRUSTED - 1
     flagged = db.get_question(conn, "prob-001", include_hidden=True)
     assert flagged.status is Status.FLAGGED and flagged.verification.result == "fail"
     text = report.format()
@@ -147,7 +148,7 @@ def test_cli_exit_codes_and_failure_report(
     path = tmp_path / "qq.db"
     assert main(["--db", str(path)]) == 0
     out = capsys.readouterr().out
-    assert "promoted 19" in out.lower() and "stat-005" in out
+    assert f"promoted {N_TRUSTED}" in out.lower() and "stat-005" in out
 
     # Someone edits the YAML to a wrong answer; the next run must flag it, not trust it.
     data = tmp_path / "curated"

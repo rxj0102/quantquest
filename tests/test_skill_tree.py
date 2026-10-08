@@ -277,35 +277,34 @@ def test_curated_pool_content_gaps_are_visible_and_block_unlocks(trusted_conn) -
     qs = with_perfect_stats(db.list_questions(trusted_conn))
     s = node_states(load_tree(), qs)
     # nodes with >= 3 trusted questions can be mastered ...
-    for nid in ("prob.counting", "prob.expectation", "stat.moments", "la.determinants"):
+    for nid in (
+        "prob.counting", "prob.conditional", "prob.expectation", "stat.moments", "la.determinants",
+    ):  # fmt: skip
         assert s[nid].status == "mastered", nid
     # ... nodes with fewer cannot, however well the user does (they are content gaps)
     for nid, n in {
-        "prob.conditional": 2,
         "la.eigen": 2,
         "la.projections": 1,
         "stat.estimation": 2,
     }.items():
         assert s[nid].mastery.trusted_count == n and s[nid].status != "mastered", nid
-    assert (
-        s["stat.estimation"].status == "locked"
-    )  # needs prob.conditional, which cannot be mastered yet
+    # both its prerequisites can now be mastered, so it is open, but it cannot itself be mastered
+    assert s["stat.estimation"].status == "unlocked"
 
 
 def test_content_report_lists_counts_and_gaps(trusted_conn) -> None:
     rep = content_report(load_tree(), db.list_questions(trusted_conn))
     counts = {r.node_id: r.trusted_count for r in rep.rows}
     assert counts == {
-        "prob.counting": 3, "prob.conditional": 2, "prob.expectation": 3, "stat.moments": 3,
+        "prob.counting": 3, "prob.conditional": 7, "prob.expectation": 3, "stat.moments": 3,
         "stat.estimation": 2, "la.determinants": 3, "la.eigen": 2, "la.projections": 1,
     }  # fmt: skip
     assert set(rep.below_minimum) == {
-        "prob.conditional",
         "stat.estimation",
         "la.eigen",
         "la.projections",
     }
-    assert rep.unreachable == ["stat.estimation"]  # depends on a node that cannot be mastered yet
+    assert rep.unreachable == []  # every prerequisite chain can now be mastered
     text = rep.format()
     for nid in counts:
         assert nid in text

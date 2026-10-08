@@ -7,6 +7,7 @@ from streamlit.testing.v1 import AppTest
 
 from app import bootstrap as boot
 from core import db, progress
+from tests.pool import N_TRUSTED
 from tests.ui.helpers import all_text, configure
 
 MAIN = str(Path(__file__).resolve().parents[2] / "app" / "main.py")
@@ -57,7 +58,7 @@ def test_first_start_verifies_and_promotes_the_curated_questions(tmp_path, monke
     at = run_main()
     assert not at.exception
     conn = db.connect(path)
-    assert len(db.list_playable(conn)) == 19
+    assert len(db.list_playable(conn)) == N_TRUSTED
     conn.close()
     assert "Skill tree" in all_text(at)  # the default page
 

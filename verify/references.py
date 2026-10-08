@@ -92,4 +92,40 @@ CURATED_REFERENCES: dict[str, Reference] = {
     "linalg-004": _ref("trace(Matrix([[1, 2], [0, 3]])**2)"),
     "linalg-005": _ref("det(Matrix([[a, b], [c, d]])**2)"),
     "linalg-006": _ref("(2*2 + 2*2) - (2*2 - 2*1)**2/(1*1 + 2*2)"),
+    "prob-009": _ref(
+        "(floor(10/3) - floor(5/3))/floor(10/3)",
+        sim=_sim(
+            "dice_event",
+            dice=[10],
+            given=[{"stat": "first", "mod": 3, "cmp": "eq", "value": 0}],
+            event=[{"stat": "first", "cmp": "gt", "value": 5}],
+        ),
+    ),
+    "prob-010": _ref(
+        "Sum(Sum(KroneckerDelta(a + b, 8)*(1 - KroneckerDelta(a, b)), (a, 1, 6)), (b, 1, 6)) "
+        "/ Sum(Sum(1 - KroneckerDelta(a, b), (a, 1, 6)), (b, 1, 6))",
+        {"a": "integer", "b": "integer"},
+        sim=_sim(
+            "dice_event",
+            dice=[6, 6],
+            given=[{"stat": "num_distinct", "cmp": "eq", "value": 2}],
+            event=[{"stat": "sum", "cmp": "eq", "value": 8}],
+        ),
+    ),
+    "prob-011": _ref(
+        "Rational(1, 3)*Rational(3, 12) + Rational(2, 3)*Rational(7, 20)",
+    ),
+    "prob-014": _ref(
+        "(binomial(4, 2)*4**2)/(5**4 - 4**4)",
+        sim=_sim(
+            "dice_event",
+            dice=[6, 6, 6, 6],
+            given=[{"stat": "max", "cmp": "eq", "value": 5}],
+            event=[{"stat": "count_eq", "face": 5, "cmp": "eq", "value": 2}],
+        ),
+    ),
+    "prob-015": _ref(
+        "Sum(m*(6 - m), (m, 1, 5)) / binomial(6, 2)",
+        {"m": "integer"},
+    ),
 }

@@ -10,6 +10,7 @@ import yaml
 from core import db
 from core.loader import DEFAULT_DIR, LoadError, load_entries, load_questions
 from core.schema import AnswerType, Status
+from tests.pool import N_CURATED, N_TRUSTED
 from verify.curated import load_curated, reference_hash
 from verify.promote import main as promote_main
 from verify.promote import promote_curated
@@ -49,9 +50,9 @@ def sync(conn, directory: Path, registry: dict | None = None):
 
 def test_loader_accepts_and_separates_the_reference_key() -> None:
     entries = load_entries()
-    assert len(entries) == 20
+    assert len(entries) == N_CURATED
     assert all("reference" not in e.question.model_dump() for e in entries)
-    assert sum(e.reference is not None for e in entries) == 19
+    assert sum(e.reference is not None for e in entries) == N_TRUSTED
     assert [q.id for q in load_questions()] == [e.question.id for e in entries]  # API unchanged
 
 
@@ -147,16 +148,16 @@ def test_a_every_curated_question_verifies_from_yaml_alone_and_is_trusted() -> N
     conn = db.connect(":memory:")
     refs = sync(conn, DEFAULT_DIR)  # registry={}: the YAML is the only source
     report = promote_curated(conn, refs)
-    assert len(report.promoted) == 19 and report.flagged == []
+    assert len(report.promoted) == N_TRUSTED and report.flagged == []
     assert [u.question_id for u in report.unverified] == ["stat-005"]
-    assert len(db.list_questions(conn, status="trusted")) == 19
+    assert len(db.list_questions(conn, status="trusted")) == N_TRUSTED
 
 
 def test_a_promotion_cli_uses_the_yaml_references(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     assert promote_main(["--db", str(tmp_path / "qq.db")]) == 0
-    assert "promoted 19" in capsys.readouterr().out.lower()
+    assert f"promoted {N_TRUSTED}" in capsys.readouterr().out.lower()
 
 
 def test_a_a_legacy_database_keeps_everything_trusted_after_the_migration() -> None:
@@ -173,7 +174,7 @@ def test_a_a_legacy_database_keeps_everything_trusted_after_the_migration() -> N
     before = {q.id: q.verification for q in db.list_questions(conn, status="trusted")}
     sync(conn, DEFAULT_DIR)  # first reload with hashes: adopt them, do not reset
     assert {q.id: q.verification for q in db.list_questions(conn, status="trusted")} == before
-    assert len(before) == 19
+    assert len(before) == N_TRUSTED
     assert (
         conn.execute("SELECT COUNT(*) FROM questions WHERE reference_hash IS NULL").fetchone()[0]
         == 0
@@ -185,11 +186,11 @@ def test_a_a_legacy_database_keeps_everything_trusted_after_the_migration() -> N
 
 @pytest.fixture
 def trusted_world(tmp_path: Path):
-    """A temp curated dir and a database where all 19 are trusted."""
+    """A temp curated dir and a database where all curated are trusted."""
     d = curated_copy(tmp_path)
     conn = db.connect(":memory:")
     promote_curated(conn, sync(conn, d))
-    assert len(db.list_questions(conn, status="trusted")) == 19
+    assert len(db.list_questions(conn, status="trusted")) == N_TRUSTED
     yield d, conn
     conn.close()
 
@@ -266,7 +267,7 @@ def test_b_unrelated_questions_are_untouched_by_one_reference_edit(trusted_world
         d, "prob-001", lambda i: i["reference"]["exact"].update(expr="Rational(4, 36)", symbols={})
     )
     sync(conn, d)
-    assert len(db.list_questions(conn, status="trusted")) == 18
+    assert len(db.list_questions(conn, status="trusted")) == N_TRUSTED - 1
 
 
 def test_b_solve_stats_and_created_at_survive_a_reference_reset(trusted_world) -> None:
@@ -294,7 +295,7 @@ def test_c_a_wrong_exact_reference_flags_the_question_and_hides_it(trusted_world
     assert db.get_question(conn, "prob-001") is None
     assert "prob-001" not in {q.id for q in db.list_questions(conn)}
     assert "prob-001" not in {q.id for q in db.list_questions(conn, status="trusted")}
-    assert len(db.list_questions(conn, status="trusted")) == 18
+    assert len(db.list_questions(conn, status="trusted")) == N_TRUSTED - 1
 
 
 def test_c_a_wrong_simulator_reference_flags_even_though_the_exact_value_is_right(

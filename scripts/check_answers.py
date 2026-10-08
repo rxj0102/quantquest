@@ -14,9 +14,12 @@ import sympy as sp
 from core.loader import load_questions
 from core.schema import AnswerType
 from scripts.answer_checks import linear_algebra, probability, statistics
+from scripts.draft_checks import THIRD_CHECKS
 from verify.parsing import safe_parse
 
-EXACT = {**probability.EXACT, **statistics.EXACT, **linear_algebra.EXACT}
+# The independent third checks written while drafting a question stay as its answer check once
+# the question moves into data/curated/, so approving a draft needs no extra registration.
+EXACT = {**probability.EXACT, **statistics.EXACT, **linear_algebra.EXACT, **THIRD_CHECKS}
 MONTE_CARLO = probability.MONTE_CARLO
 TOL = sp.Rational(1, 10**9)
 

@@ -13,6 +13,7 @@ from scripts.draft_check import (
     format_report,
     main,
 )
+from tests.pool import N_CURATED
 
 DRAFTS = Path(__file__).resolve().parent.parent / "data" / "drafts"
 
@@ -314,7 +315,7 @@ def test_bootstrap_never_loads_drafts(tmp_path: Path) -> None:
     conn = db.connect(tmp_path / "qq.db")
     stored = {r[0] for r in conn.execute("SELECT id FROM questions")}
     conn.close()
-    assert not stored & draft_ids and len(stored) == 20
+    assert not stored & draft_ids and len(stored) == N_CURATED
 
 
 @pytest.mark.parametrize("path", sorted(DRAFTS.glob("*.yaml")), ids=lambda p: p.name)

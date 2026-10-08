@@ -10,6 +10,7 @@ import pytest
 from app.bootstrap import BootstrapReport, bootstrap
 from core import db
 from core.loader import DEFAULT_DIR
+from tests.pool import N_CURATED, N_TRUSTED
 
 
 def counts(path: Path) -> dict:
@@ -34,9 +35,9 @@ def counts(path: Path) -> dict:
 
 def test_bootstrap_loads_verifies_and_promotes(tmp_path: Path) -> None:
     report = bootstrap(str(tmp_path / "qq.db"))
-    assert report == BootstrapReport(promoted=19, flagged=0, unverified=1)
+    assert report == BootstrapReport(promoted=N_TRUSTED, flagged=0, unverified=1)
     assert counts(tmp_path / "qq.db") == {
-        "integrity": "ok", "questions": 20, "trusted": 19, "flagged": 0, "no_hash": 0,
+        "integrity": "ok", "questions": N_CURATED, "trusted": N_TRUSTED, "flagged": 0, "no_hash": 0,
     }  # fmt: skip
 
 
@@ -45,7 +46,7 @@ def test_a_second_bootstrap_changes_nothing(tmp_path: Path) -> None:
     bootstrap(path)
     again = bootstrap(path)
     assert (again.promoted, again.flagged, again.error) == (0, 0, None)
-    assert counts(Path(path))["trusted"] == 19
+    assert counts(Path(path))["trusted"] == N_TRUSTED
 
 
 def test_an_unreadable_data_directory_is_reported_not_raised(tmp_path: Path) -> None:
@@ -65,7 +66,7 @@ def test_bootstrap_resumes_after_a_crash_between_loading_and_promoting(tmp_path:
     db.upsert_questions(conn, [e.question for e in entries], hashes_by_id(entries))
     conn.close()  # "crashed" before promote_curated
     assert counts(path)["trusted"] == 0
-    assert bootstrap(str(path)).promoted == 19
+    assert bootstrap(str(path)).promoted == N_TRUSTED
 
 
 def test_bootstrap_flags_but_never_exposes_a_failing_question(tmp_path: Path) -> None:
@@ -77,10 +78,10 @@ def test_bootstrap_flags_but_never_exposes_a_failing_question(tmp_path: Path) ->
     f.write_text(f.read_text().replace('answer: "17"', 'answer: "18"'))
     path = tmp_path / "qq.db"
     report = bootstrap(str(path), data)
-    assert report.flagged == 1 and report.promoted == 18
+    assert report.flagged == 1 and report.promoted == N_TRUSTED - 1
     conn = db.connect(path)
     assert db.get_playable(conn, "stat-002") is None
-    assert len(db.list_playable(conn)) == 18
+    assert len(db.list_playable(conn)) == N_TRUSTED - 1
     conn.close()
 
 
@@ -107,14 +108,14 @@ def test_concurrent_process_starts_do_not_corrupt_the_database(tmp_path: Path) -
     [p.join(60) for p in procs]
     assert all(r[0] == "ok" for r in results), results
     assert all(r[2] == 0 and r[3] is None for r in results), results  # nothing flagged, no errors
-    assert sum(r[1] for r in results) >= 19  # between them every question got promoted
+    assert sum(r[1] for r in results) >= N_TRUSTED  # between them every question got promoted
     assert counts(Path(path)) == {
-        "integrity": "ok", "questions": 20, "trusted": 19, "flagged": 0, "no_hash": 0,
+        "integrity": "ok", "questions": N_CURATED, "trusted": N_TRUSTED, "flagged": 0, "no_hash": 0,
     }  # fmt: skip
     check = db.connect(path)
     ids = [r[0] for r in check.execute("SELECT id FROM questions")]
     check.close()
-    assert len(ids) == len(set(ids)) == 20
+    assert len(ids) == len(set(ids)) == N_CURATED
 
 
 def test_concurrent_thread_starts_in_one_process(tmp_path: Path) -> None:
@@ -134,7 +135,7 @@ def test_concurrent_thread_starts_in_one_process(tmp_path: Path) -> None:
     [t.join(300) for t in threads]
     assert not errors, errors
     assert all(r.error is None and r.flagged == 0 for r in results)
-    assert counts(Path(path))["trusted"] == 19
+    assert counts(Path(path))["trusted"] == N_TRUSTED
 
 
 def _migrate(path: str, barrier, out) -> None:
